@@ -1,86 +1,86 @@
 import { useState } from "react";
 import {
 	SafeAreaView,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
 export default function ContributionScreen() {
-	const [message, setMessage] = useState("");
-	const [submitted, setSubmitted] = useState(false);
-
-	const submit = () => {
-		setSubmitted(true);
-		setTimeout(() => setSubmitted(false), 1200);
-	};
+	const [route, setRoute] = useState("");
+	const [note, setNote] = useState("");
 
 	return (
 		<SafeAreaView style={styles.safe}>
-			<ScrollView contentContainerStyle={styles.container}>
+			<View style={styles.container}>
 				<Text style={styles.title}>Contribute</Text>
 				<Text style={styles.subtitle}>
-					Send a crowd report (delay, crowding, hazard). This demo stores it in
-					memory.
+					Report delays, crowding, or route updates.
 				</Text>
 
 				<View style={styles.card}>
-					<Text style={styles.label}>Report</Text>
+					<Text style={styles.label}>Route / Bus</Text>
 					<TextInput
-						style={[styles.input, { height: 120, textAlignVertical: "top" }]}
-						placeholder="e.g., Bus 42 delayed near Central"
-						value={message}
-						onChangeText={setMessage}
-						multiline
+						style={styles.input}
+						placeholder="e.g. 45A"
+						value={route}
+						onChangeText={setRoute}
+						placeholderTextColor={palette.subtext}
 					/>
 
-					<TouchableOpacity style={styles.primary} onPress={submit}>
-						<Text style={styles.primaryText}>Submit</Text>
-					</TouchableOpacity>
+					<Text style={styles.label}>Details</Text>
+					<TextInput
+						style={[styles.input, { height: 110, textAlignVertical: "top" }]}
+						placeholder="Describe the issue..."
+						value={note}
+						onChangeText={setNote}
+						multiline
+						placeholderTextColor={palette.subtext}
+					/>
 
-					{submitted ? (
-						<Text style={styles.success}>Thanks! Report captured.</Text>
-					) : null}
+					<TouchableOpacity style={styles.primary}>
+						<Text style={styles.primaryText}>Submit report</Text>
+					</TouchableOpacity>
 				</View>
-			</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { padding: 16, gap: 12 },
-	title: { fontSize: 26, fontWeight: "700" },
-	subtitle: { fontSize: 14, color: "#4b5563" },
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+	title: { fontSize: 24, fontWeight: "800", color: palette.text },
+	subtitle: { fontSize: 14, color: palette.subtext },
 	card: {
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		gap: 10,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		gap: spacing.sm,
+		borderWidth: 1,
+		borderColor: palette.border,
+		...shadow.card,
 	},
-	label: { fontSize: 14, fontWeight: "600" },
+	label: { fontSize: 13, fontWeight: "700", color: palette.subtext },
 	input: {
 		borderWidth: 1,
-		borderColor: "#e5e7eb",
-		borderRadius: 10,
-		padding: 12,
-		backgroundColor: "#fff",
-		fontSize: 15,
+		borderColor: palette.border,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		backgroundColor: "#F8FAFC",
+		color: palette.text,
 	},
 	primary: {
-		marginTop: 4,
-		backgroundColor: "#2563eb",
-		padding: 14,
-		borderRadius: 12,
+		marginTop: spacing.sm,
+		height: 52,
+		borderRadius: radius.lg,
+		backgroundColor: palette.primary,
 		alignItems: "center",
+		justifyContent: "center",
+		...shadow.elevated,
 	},
-	primaryText: { color: "white", fontWeight: "700" },
-	success: { color: "#16a34a", fontWeight: "700" },
+	primaryText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 });

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	SafeAreaView,
 	ScrollView,
@@ -10,103 +10,119 @@ import {
 	View,
 } from "react-native";
 
+const palette = {
+	primary: "#0A84FF",
+	primaryDark: "#0060DF",
+	surface: "#F4F7FB",
+	card: "#FFFFFF",
+	border: "#E5E7EB",
+	text: "#0F172A",
+	subtext: "#475569",
+	success: "#16A34A",
+	shadow: "rgba(0,0,0,0.08)",
+};
+
 export default function OTPScreen() {
 	const router = useRouter();
-	const [otp, setOtp] = useState("");
-	const [status, setStatus] = useState("Waiting for code");
+	const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+	const [timer, setTimer] = useState(30);
 
-	const verify = () => {
-		setStatus("Verifying...");
-		setTimeout(() => {
-			setStatus("Verified. Choose a role to explore.");
-		}, 400);
+	useEffect(() => {
+		if (timer <= 0) return;
+		const id = setTimeout(() => setTimer((t) => t - 1), 1000);
+		return () => clearTimeout(id);
+	}, [timer]);
+
+	const handleChange = (text, idx) => {
+		const digits = text.replace(/[^0-9]/g, "").slice(-1);
+		const next = [...otp];
+		next[idx] = digits;
+		setOtp(next);
 	};
+
+	const filled = otp.every((d) => d.length === 1);
 
 	return (
 		<SafeAreaView style={styles.safe}>
 			<ScrollView contentContainerStyle={styles.container}>
-				<Text style={styles.title}>Enter OTP</Text>
-				<Text style={styles.subtitle}>
-					We sent a demo code to your email. Use any 6 digits.
+				<View style={styles.header}>
+					<Text style={styles.logo}>🚌</Text>
+					<Text style={styles.brand}>BusTrackNow</Text>
+				</View>
+
+				<Text style={styles.title}>Enter the 6-digit code</Text>
+				<Text style={styles.subtitle}>Sent to +1234567890</Text>
+
+				<View style={styles.otpRow}>
+					{otp.map((digit, idx) => (
+						<TextInput
+							key={idx}
+							style={styles.otpBox}
+							keyboardType="number-pad"
+							maxLength={1}
+							value={digit}
+							onChangeText={(t) => handleChange(t, idx)}
+						/>
+					))}
+				</View>
+
+				<TouchableOpacity
+					style={styles.primaryBtn}
+					disabled={!filled}
+					onPress={() => router.push("/profile")}
+				>
+					<Text style={styles.primaryBtnText}>Verify & Continue</Text>
+				</TouchableOpacity>
+
+				<Text style={styles.resend}>
+					Resend in {timer.toString().padStart(2, "0")}s
 				</Text>
-
-				<View style={styles.card}>
-					<Text style={styles.label}>One-Time Password</Text>
-					<TextInput
-						value={otp}
-						onChangeText={setOtp}
-						placeholder="123456"
-						keyboardType="number-pad"
-						style={styles.input}
-						maxLength={6}
-					/>
-
-					<TouchableOpacity style={styles.button} onPress={verify}>
-						<Text style={styles.buttonText}>Verify</Text>
-					</TouchableOpacity>
-
-					<Text style={styles.status}>{status}</Text>
-				</View>
-
-				<View style={styles.row}>
-					<TouchableOpacity
-						style={[styles.roleButton, { backgroundColor: "#2563eb" }]}
-						onPress={() => router.push("/viewer")}
-					>
-						<Text style={styles.roleText}>Enter as Viewer</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
-						style={[styles.roleButton, { backgroundColor: "#16a34a" }]}
-						onPress={() => router.push("/admin")}
-					>
-						<Text style={styles.roleText}>Enter as Admin</Text>
-					</TouchableOpacity>
-				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { padding: 16, gap: 12 },
-	title: { fontSize: 26, fontWeight: "700" },
-	subtitle: { fontSize: 14, color: "#4b5563" },
-	card: {
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		gap: 10,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
-	},
-	label: { fontSize: 14, fontWeight: "600" },
-	input: {
-		borderWidth: 1,
-		borderColor: "#e5e7eb",
-		borderRadius: 10,
-		padding: 12,
-		fontSize: 15,
-		backgroundColor: "#f9fafb",
-		letterSpacing: 4,
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { padding: 20, gap: 20 },
+	header: { alignItems: "center", gap: 8, marginBottom: 4 },
+	logo: { fontSize: 36 },
+	brand: { fontSize: 18, fontWeight: "800", color: palette.primaryDark },
+	title: {
+		fontSize: 22,
+		fontWeight: "700",
+		color: palette.text,
 		textAlign: "center",
 	},
-	button: {
-		backgroundColor: "#2563eb",
-		padding: 14,
-		borderRadius: 12,
-		alignItems: "center",
-	},
-	buttonText: { color: "white", fontWeight: "700", fontSize: 16 },
-	status: { fontSize: 13, color: "#2563eb" },
-	row: { flexDirection: "row", gap: 10 },
-	roleButton: {
+	subtitle: { fontSize: 14, color: palette.subtext, textAlign: "center" },
+	otpRow: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
+	otpBox: {
 		flex: 1,
-		padding: 14,
+		height: 60,
 		borderRadius: 12,
-		alignItems: "center",
+		borderWidth: 1,
+		borderColor: palette.border,
+		textAlign: "center",
+		fontSize: 22,
+		backgroundColor: palette.card,
+		shadowColor: palette.shadow,
+		shadowOpacity: 0.1,
+		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 4 },
+		elevation: 3,
 	},
-	roleText: { color: "white", fontWeight: "700" },
+	primaryBtn: {
+		height: 54,
+		borderRadius: 14,
+		backgroundColor: palette.primary,
+		alignItems: "center",
+		justifyContent: "center",
+		shadowColor: palette.shadow,
+		shadowOpacity: 0.2,
+		shadowRadius: 10,
+		shadowOffset: { width: 0, height: 8 },
+		elevation: 4,
+	},
+	primaryBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+	resend: { textAlign: "center", color: palette.subtext, fontSize: 13 },
 });

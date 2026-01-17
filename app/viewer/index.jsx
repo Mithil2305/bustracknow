@@ -10,9 +10,8 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { COLORS, SHADOWS, SIZES } from "../constants/theme";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
-// Mock Component for Map (replace with actual MapView)
 const MockMapBackground = () => (
 	<View style={styles.mapContainer}>
 		<Image
@@ -22,21 +21,47 @@ const MockMapBackground = () => (
 			style={styles.mapImage}
 			resizeMode="cover"
 		/>
-		{/* Mock Bus Markers */}
-		<View style={[styles.marker, { top: "40%", left: "30%" }]}>
-			<View style={styles.markerLabel}>
+		<View style={[styles.marker, { top: "42%", left: "30%" }]}>
+			<View style={[styles.markerLabel, { backgroundColor: palette.primary }]}>
 				<Text style={styles.markerText}>45A</Text>
 			</View>
-			<View style={styles.markerDot} />
+			<View style={[styles.markerDot, { backgroundColor: palette.primary }]} />
 		</View>
-		<View style={[styles.marker, { top: "30%", left: "70%" }]}>
-			<View style={[styles.markerLabel, { backgroundColor: COLORS.secondary }]}>
+		<View style={[styles.marker, { top: "28%", left: "68%" }]}>
+			<View
+				style={[styles.markerLabel, { backgroundColor: palette.secondary }]}
+			>
 				<Text style={styles.markerText}>12C</Text>
 			</View>
-			<View style={[styles.markerDot, { backgroundColor: COLORS.secondary }]} />
+			<View
+				style={[styles.markerDot, { backgroundColor: palette.secondary }]}
+			/>
 		</View>
 	</View>
 );
+
+const bentoCards = [
+	{
+		title: "Nearest Stop",
+		value: "Gandhipuram",
+		meta: "2 min walk",
+		icon: "pin",
+	},
+	{ title: "Next Arrival", value: "45A", meta: "3m • Low crowd", icon: "bus" },
+	{
+		title: "Saved Place",
+		value: "Home",
+		meta: "Tap to navigate",
+		icon: "home",
+	},
+	{
+		title: "Search Routes",
+		value: "Find a bus",
+		meta: "Plan your trip",
+		icon: "search",
+		href: "/viewer/search",
+	},
+];
 
 export default function ViewerHome() {
 	const router = useRouter();
@@ -44,25 +69,20 @@ export default function ViewerHome() {
 	return (
 		<View style={styles.container}>
 			<StatusBar barStyle="dark-content" />
-
-			{/* Map Background occupies top 60% approx */}
 			<MockMapBackground />
 
-			{/* Floating Header on Map */}
 			<SafeAreaView style={styles.topOverlay}>
 				<View style={styles.headerRow}>
 					<TouchableOpacity
 						style={styles.iconButton}
 						onPress={() => router.push("/settings")}
 					>
-						<Ionicons name="menu" size={24} color={COLORS.text} />
+						<Ionicons name="menu" size={22} color={palette.text} />
 					</TouchableOpacity>
-
 					<View style={styles.locationPill}>
-						<Ionicons name="location" size={16} color={COLORS.error} />
+						<Ionicons name="location" size={16} color="#F97316" />
 						<Text style={styles.locationText}>Coimbatore, TN</Text>
 					</View>
-
 					<TouchableOpacity
 						style={styles.profileButton}
 						onPress={() => router.push("/profile")}
@@ -75,46 +95,47 @@ export default function ViewerHome() {
 				</View>
 			</SafeAreaView>
 
-			{/* Bottom Sheet Content */}
 			<View style={styles.bottomSheet}>
 				<View style={styles.handle} />
 
-				<View style={styles.sheetHeader}>
-					<Text style={styles.sheetTitle}>Find your bus</Text>
+				<Text style={styles.sheetTitle}>Dashboard</Text>
+				<View style={styles.grid2}>
+					{bentoCards.map((c) => (
+						<TouchableOpacity
+							key={c.title}
+							style={styles.bento}
+							onPress={() => c.href && router.push(c.href)}
+							activeOpacity={c.href ? 0.8 : 1}
+						>
+							<View style={styles.bentoHeader}>
+								<View style={styles.iconCircle}>
+									<Ionicons name={c.icon} size={18} color={palette.primary} />
+								</View>
+								<Text style={styles.bentoMeta}>{c.meta}</Text>
+							</View>
+							<Text style={styles.bentoTitle}>{c.title}</Text>
+							<Text style={styles.bentoValue}>{c.value}</Text>
+						</TouchableOpacity>
+					))}
 				</View>
 
-				{/* Search Bar */}
-				<TouchableOpacity
-					style={styles.searchBar}
-					onPress={() => router.push("/viewer/search")}
-				>
-					<Ionicons
-						name="search"
-						size={20}
-						color={COLORS.primary}
-						style={{ marginRight: 12 }}
-					/>
-					<Text style={styles.searchText}>Where are you going?</Text>
-				</TouchableOpacity>
-
 				<View style={styles.sectionHeader}>
-					<Text style={styles.sectionTitle}>NEARBY STOPS</Text>
+					<Text style={styles.sectionTitle}>Nearby stops</Text>
 					<TouchableOpacity>
 						<Text style={styles.seeAllText}>See All</Text>
 					</TouchableOpacity>
 				</View>
 
 				<ScrollView
-					style={styles.scrollList}
+					style={{ maxHeight: 240 }}
 					showsVerticalScrollIndicator={false}
 				>
-					{/* Bus Stop Item */}
 					<TouchableOpacity
 						style={styles.stopCard}
 						onPress={() => router.push("/viewer/live")}
 					>
 						<View style={[styles.iconBox, { backgroundColor: "#EFF6FF" }]}>
-							<FontAwesome5 name="bus" size={20} color={COLORS.primary} />
+							<FontAwesome5 name="bus" size={20} color={palette.primary} />
 						</View>
 						<View style={styles.cardInfo}>
 							<Text style={styles.stopName}>Gandhipuram Stand</Text>
@@ -128,24 +149,22 @@ export default function ViewerHome() {
 						</View>
 					</TouchableOpacity>
 
-					{/* Bus Stop Item 2 */}
 					<TouchableOpacity style={styles.stopCard}>
 						<View style={[styles.iconBox, { backgroundColor: "#FFF7ED" }]}>
-							<Ionicons name="map" size={22} color={COLORS.secondary} />
+							<Ionicons name="walk-outline" size={22} color="#EA580C" />
 						</View>
 						<View style={styles.cardInfo}>
-							<Text style={styles.stopName}>Railway Station</Text>
-							<Text style={styles.stopMeta}>12 mins walk • 1 bus arriving</Text>
+							<Text style={styles.stopName}>Race Course</Text>
+							<Text style={styles.stopMeta}>
+								8 mins walk • 2 buses arriving
+							</Text>
 						</View>
 						<View style={styles.cardStatus}>
-							<Text style={[styles.statusTime, { color: COLORS.text }]}>
-								5m
-							</Text>
+							<Text style={styles.statusTime}>5m</Text>
 							<Text style={styles.statusBus}>Bus 12C</Text>
 						</View>
 					</TouchableOpacity>
 
-					{/* Bus Stop Item 3 */}
 					<TouchableOpacity style={styles.stopCard}>
 						<View style={[styles.iconBox, { backgroundColor: "#FAF5FF" }]}>
 							<Ionicons name="home" size={22} color="#9333EA" />
@@ -158,7 +177,7 @@ export default function ViewerHome() {
 							<Ionicons
 								name="chevron-forward"
 								size={20}
-								color={COLORS.textPlaceholder}
+								color={palette.subtext}
 							/>
 						</View>
 					</TouchableOpacity>
@@ -169,202 +188,144 @@ export default function ViewerHome() {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: COLORS.surface,
-	},
-	mapContainer: {
-		position: "absolute",
-		top: 0,
-		width: "100%",
-		height: "65%", // Map takes up top portion
-	},
-	mapImage: {
-		width: "100%",
-		height: "100%",
-	},
-	marker: {
-		position: "absolute",
-		alignItems: "center",
-	},
+	container: { flex: 1, backgroundColor: palette.surface },
+	mapContainer: { position: "absolute", top: 0, width: "100%", height: "65%" },
+	mapImage: { width: "100%", height: "100%" },
+	marker: { position: "absolute", alignItems: "center" },
 	markerLabel: {
-		backgroundColor: COLORS.primary,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
-		borderRadius: 8,
+		borderRadius: radius.md,
 		marginBottom: 4,
-		...SHADOWS.light,
+		...shadow.card,
 	},
-	markerText: {
-		color: COLORS.white,
-		fontWeight: "bold",
-		fontSize: 10,
-	},
-	markerDot: {
-		width: 16,
-		height: 16,
-		borderRadius: 8,
-		backgroundColor: COLORS.primary,
-		borderWidth: 2,
-		borderColor: COLORS.white,
-	},
-	topOverlay: {
-		position: "absolute",
-		top: 0,
-		width: "100%",
-		zIndex: 10,
-	},
+	markerText: { color: "#fff", fontWeight: "700" },
+	markerDot: { width: 10, height: 10, borderRadius: 8 },
+	topOverlay: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 	headerRow: {
 		flexDirection: "row",
-		justifyContent: "space-between",
 		alignItems: "center",
-		paddingHorizontal: 20,
-		paddingTop: 10,
+		justifyContent: "space-between",
+		gap: spacing.sm,
 	},
 	iconButton: {
 		width: 44,
 		height: 44,
-		backgroundColor: "rgba(255,255,255,0.95)",
-		borderRadius: 22,
-		justifyContent: "center",
+		borderRadius: radius.md,
+		backgroundColor: palette.card,
 		alignItems: "center",
-		...SHADOWS.light,
+		justifyContent: "center",
+		...shadow.card,
 	},
 	locationPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "rgba(255,255,255,0.95)",
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-		borderRadius: 24,
-		...SHADOWS.light,
+		gap: 8,
+		paddingHorizontal: spacing.md,
+		paddingVertical: spacing.xs,
+		borderRadius: radius.lg,
+		backgroundColor: palette.card,
+		...shadow.card,
 	},
-	locationText: {
-		marginLeft: 6,
-		fontWeight: "700",
-		color: COLORS.text,
-		fontSize: 13,
-	},
+	locationText: { fontWeight: "700", color: palette.text },
 	profileButton: {
 		width: 44,
 		height: 44,
-		borderRadius: 22,
-		borderWidth: 2,
-		borderColor: COLORS.white,
-		...SHADOWS.light,
+		borderRadius: radius.md,
+		overflow: "hidden",
+		backgroundColor: palette.card,
+		...shadow.card,
 	},
-	profileImage: {
-		width: "100%",
-		height: "100%",
-		borderRadius: 22,
-	},
+	profileImage: { width: "100%", height: "100%" },
 	bottomSheet: {
 		position: "absolute",
 		bottom: 0,
 		width: "100%",
-		height: "45%",
-		backgroundColor: COLORS.white,
-		borderTopLeftRadius: 32,
-		borderTopRightRadius: 32,
-		paddingHorizontal: SIZES.padding,
-		paddingTop: 12,
-		...SHADOWS.primary, // Strong shadow to separate from map
+		backgroundColor: palette.card,
+		borderTopLeftRadius: radius.xl,
+		borderTopRightRadius: radius.xl,
+		paddingHorizontal: spacing.lg,
+		paddingBottom: spacing.xl,
+		paddingTop: spacing.md,
+		...shadow.elevated,
 	},
 	handle: {
-		width: 40,
-		height: 4,
-		backgroundColor: COLORS.border,
-		borderRadius: 2,
 		alignSelf: "center",
-		marginBottom: 20,
-	},
-	sheetHeader: {
-		marginBottom: 16,
+		width: 50,
+		height: 5,
+		borderRadius: 3,
+		backgroundColor: palette.border,
+		marginBottom: spacing.md,
 	},
 	sheetTitle: {
-		fontSize: SIZES.h3,
-		fontWeight: "700",
-		color: COLORS.text,
+		fontSize: 18,
+		fontWeight: "800",
+		color: palette.text,
+		marginBottom: spacing.sm,
 	},
-	searchBar: {
+	grid2: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+	bento: {
+		flex: 1,
+		minWidth: "48%",
+		backgroundColor: "#F8FAFC",
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		gap: spacing.xs,
+		...shadow.card,
+	},
+	bentoHeader: {
 		flexDirection: "row",
+		justifyContent: "space-between",
 		alignItems: "center",
-		backgroundColor: COLORS.surface,
-		paddingHorizontal: 16,
-		height: 52,
-		borderRadius: SIZES.radius,
-		borderWidth: 1,
-		borderColor: COLORS.surfaceHighlight,
-		marginBottom: 24,
 	},
-	searchText: {
-		color: COLORS.textPlaceholder,
-		fontSize: 14,
-		fontWeight: "500",
+	iconCircle: {
+		width: 30,
+		height: 30,
+		borderRadius: radius.md,
+		backgroundColor: "#E7F0FF",
+		alignItems: "center",
+		justifyContent: "center",
 	},
+	bentoMeta: { fontSize: 12, color: palette.subtext },
+	bentoTitle: { fontSize: 14, fontWeight: "800", color: palette.text },
+	bentoValue: { fontSize: 16, fontWeight: "800", color: palette.primaryDark },
 	sectionHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 12,
+		marginTop: spacing.md,
+		marginBottom: spacing.xs,
 	},
 	sectionTitle: {
 		fontSize: 12,
-		fontWeight: "700",
-		color: COLORS.textSecondary,
-		letterSpacing: 0.5,
+		color: palette.subtext,
+		letterSpacing: 0.6,
+		fontWeight: "800",
 	},
-	seeAllText: {
-		color: COLORS.primary,
-		fontSize: 12,
-		fontWeight: "700",
-	},
-	scrollList: {
-		flex: 1,
-	},
+	seeAllText: { color: palette.primary, fontWeight: "700" },
 	stopCard: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: COLORS.white,
-		padding: 16,
-		borderRadius: 20,
-		marginBottom: 12,
+		gap: spacing.md,
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
 		borderWidth: 1,
-		borderColor: COLORS.surfaceHighlight,
-		...SHADOWS.light,
+		borderColor: palette.border,
+		marginBottom: spacing.sm,
+		...shadow.card,
 	},
 	iconBox: {
-		width: 48,
-		height: 48,
-		borderRadius: 14,
-		justifyContent: "center",
+		width: 46,
+		height: 46,
+		borderRadius: radius.md,
 		alignItems: "center",
-		marginRight: 16,
+		justifyContent: "center",
 	},
-	cardInfo: {
-		flex: 1,
-	},
-	stopName: {
-		fontSize: 15,
-		fontWeight: "700",
-		color: COLORS.text,
-		marginBottom: 4,
-	},
-	stopMeta: {
-		fontSize: 12,
-		color: COLORS.textSecondary,
-	},
-	cardStatus: {
-		alignItems: "flex-end",
-	},
-	statusTime: {
-		fontSize: 14,
-		fontWeight: "700",
-		color: COLORS.success,
-		marginBottom: 2,
-	},
-	statusBus: {
-		fontSize: 11,
-		color: COLORS.textPlaceholder,
-	},
+	cardInfo: { flex: 1, gap: 2 },
+	stopName: { fontSize: 16, fontWeight: "700", color: palette.text },
+	stopMeta: { fontSize: 13, color: palette.subtext },
+	cardStatus: { alignItems: "flex-end", gap: 2 },
+	statusTime: { fontSize: 13, color: palette.primaryDark, fontWeight: "700" },
+	statusBus: { fontSize: 12, color: palette.subtext },
 });

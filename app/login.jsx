@@ -1,311 +1,167 @@
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-	ActivityIndicator,
-	KeyboardAvoidingView,
-	Platform,
 	SafeAreaView,
+	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { signIn } from "../services/firebase/authService";
-import { COLORS, SHADOWS, SIZES } from "./constants/theme";
+
+const palette = {
+	primary: "#0A84FF",
+	primaryDark: "#0060DF",
+	surface: "#F4F7FB",
+	card: "#FFFFFF",
+	border: "#E5E7EB",
+	text: "#0F172A",
+	subtext: "#475569",
+	success: "#16A34A",
+	error: "#EF4444",
+	shadow: "rgba(0,0,0,0.08)",
+};
 
 export default function LoginScreen() {
 	const router = useRouter();
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState("");
+	const [phone, setPhone] = useState("");
+	const [status, setStatus] = useState(
+		"We’ll send a 6-digit code to your number"
+	);
 
-	const handleLogin = async () => {
-		if (!email || !password) {
-			setError("Please fill in all fields");
-			return;
-		}
-
-		setLoading(true);
-		setError("");
-
-		try {
-			await signIn(email, password);
-			// Navigate to main viewer on success
-			router.replace("/viewer/");
-		} catch (err) {
-			setError(err.message || "Failed to sign in");
-		} finally {
-			setLoading(false);
-		}
+	const handleSendOtp = () => {
+		setStatus("Sending code...");
+		setTimeout(() => {
+			setStatus("Code sent. Check your phone.");
+			router.push("/otp");
+		}, 500);
 	};
 
 	return (
-		<SafeAreaView style={styles.container}>
-			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "padding" : "height"}
-				style={styles.keyboardView}
-			>
-				<View style={styles.contentContainer}>
-					{/* Header Section */}
-					<View style={styles.header}>
-						<View style={styles.logoContainer}>
-							<FontAwesome5 name="bus" size={32} color={COLORS.white} />
-						</View>
-						<Text style={styles.title}>BusTrackNow</Text>
-						<Text style={styles.subtitle}>Your journey, right on time.</Text>
+		<SafeAreaView style={styles.safe}>
+			<ScrollView contentContainerStyle={styles.container}>
+				<View style={styles.header}>
+					<View style={styles.logoCircle}>
+						<Text style={styles.logoIcon}>🚌</Text>
 					</View>
-
-					{/* Form Section */}
-					<View style={styles.form}>
-						{error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>EMAIL</Text>
-							<View style={styles.inputContainer}>
-								<Ionicons
-									name="mail-outline"
-									size={20}
-									color={COLORS.textPlaceholder}
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder="name@example.com"
-									placeholderTextColor={COLORS.textPlaceholder}
-									value={email}
-									onChangeText={setEmail}
-									autoCapitalize="none"
-									keyboardType="email-address"
-								/>
-							</View>
-						</View>
-
-						<View style={styles.inputGroup}>
-							<Text style={styles.inputLabel}>PASSWORD</Text>
-							<View style={styles.inputContainer}>
-								<Ionicons
-									name="lock-closed-outline"
-									size={20}
-									color={COLORS.textPlaceholder}
-									style={styles.inputIcon}
-								/>
-								<TextInput
-									style={styles.input}
-									placeholder="••••••••"
-									placeholderTextColor={COLORS.textPlaceholder}
-									value={password}
-									onChangeText={setPassword}
-									secureTextEntry
-								/>
-							</View>
-						</View>
-
-						<TouchableOpacity style={styles.forgotPassword}>
-							<Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-						</TouchableOpacity>
-
-						<TouchableOpacity
-							style={styles.signInButton}
-							onPress={handleLogin}
-							disabled={loading}
-						>
-							{loading ? (
-								<ActivityIndicator color={COLORS.white} />
-							) : (
-								<>
-									<Text style={styles.signInButtonText}>Sign In</Text>
-									<Ionicons
-										name="arrow-forward"
-										size={20}
-										color={COLORS.white}
-										style={{ marginLeft: 8 }}
-									/>
-								</>
-							)}
-						</TouchableOpacity>
-					</View>
-
-					{/* Social / Footer */}
-					<View style={styles.footer}>
-						<View style={styles.dividerContainer}>
-							<View style={styles.divider} />
-							<Text style={styles.dividerText}>Or continue with</Text>
-							<View style={styles.divider} />
-						</View>
-
-						<View style={styles.socialButtons}>
-							<TouchableOpacity style={styles.socialButton}>
-								<Ionicons name="logo-google" size={20} color="#DB4437" />
-								<Text style={styles.socialButtonText}>Google</Text>
-							</TouchableOpacity>
-							<TouchableOpacity style={styles.socialButton}>
-								<Ionicons name="logo-apple" size={20} color={COLORS.text} />
-								<Text style={styles.socialButtonText}>Apple</Text>
-							</TouchableOpacity>
-						</View>
-
-						<View style={styles.signupContainer}>
-							<Text style={styles.signupText}>Don't have an account? </Text>
-							<TouchableOpacity onPress={() => router.push("/signup")}>
-								<Text style={styles.signupLink}>Sign Up</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
+					<Text style={styles.brand}>BusTrackNow</Text>
 				</View>
-			</KeyboardAvoidingView>
+
+				<Text style={styles.title}>Login</Text>
+				<Text style={styles.subtitle}>Enter your phone number to continue</Text>
+
+				<View style={styles.card}>
+					<Text style={styles.label}>PHONE NUMBER</Text>
+					<View style={styles.inputRow}>
+						<Text style={styles.countryCode}>🇮🇳 +91</Text>
+						<View style={styles.divider} />
+						<TextInput
+							style={styles.input}
+							placeholder="98765 43210"
+							keyboardType="phone-pad"
+							value={phone}
+							onChangeText={setPhone}
+							placeholderTextColor={palette.subtext}
+						/>
+					</View>
+
+					<TouchableOpacity style={styles.primaryBtn} onPress={handleSendOtp}>
+						<Text style={styles.primaryBtnText}>Send OTP</Text>
+						<Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+					</TouchableOpacity>
+
+					<Text style={styles.status}>{status}</Text>
+				</View>
+
+				<Text style={styles.terms}>
+					By continuing, you agree to our <Text style={styles.link}>Terms</Text>{" "}
+					& <Text style={styles.link}>Privacy</Text>.
+				</Text>
+			</ScrollView>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: COLORS.surface,
-	},
-	keyboardView: {
-		flex: 1,
-	},
-	contentContainer: {
-		flex: 1,
-		paddingHorizontal: SIZES.padding,
-		justifyContent: "center",
-	},
-	header: {
-		alignItems: "center",
-		marginBottom: 40,
-	},
-	logoContainer: {
-		width: 80,
-		height: 80,
-		backgroundColor: COLORS.primary,
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { padding: 20, gap: 16 },
+	header: { alignItems: "center", marginBottom: 8 },
+	logoCircle: {
+		width: 72,
+		height: 72,
 		borderRadius: 20,
-		justifyContent: "center",
+		backgroundColor: palette.primary,
 		alignItems: "center",
-		marginBottom: 20,
-		...SHADOWS.primary,
+		justifyContent: "center",
+		shadowColor: palette.shadow,
+		shadowOpacity: 0.2,
+		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 6 },
+		elevation: 5,
 	},
-	title: {
-		fontSize: SIZES.h1,
-		fontWeight: "700",
-		color: COLORS.text,
-		marginBottom: 8,
+	logoIcon: { fontSize: 36, color: "#FFFFFF" },
+	brand: {
+		marginTop: 10,
+		fontSize: 20,
+		fontWeight: "800",
+		color: palette.primaryDark,
 	},
-	subtitle: {
-		fontSize: SIZES.body2,
-		color: COLORS.textSecondary,
+	title: { fontSize: 26, fontWeight: "700", color: palette.text },
+	subtitle: { fontSize: 14, color: palette.subtext },
+	card: {
+		backgroundColor: palette.card,
+		borderRadius: 16,
+		padding: 16,
+		gap: 12,
+		shadowColor: palette.shadow,
+		shadowOpacity: 0.12,
+		shadowRadius: 10,
+		shadowOffset: { width: 0, height: 6 },
+		elevation: 4,
 	},
-	form: {
-		marginBottom: 20,
-	},
-	errorText: {
-		color: COLORS.error,
-		marginBottom: 10,
-		textAlign: "center",
-	},
-	inputGroup: {
-		marginBottom: 16,
-	},
-	inputLabel: {
+	label: {
 		fontSize: 12,
 		fontWeight: "700",
-		color: COLORS.textSecondary,
-		marginBottom: 8,
-		marginLeft: 4,
-		letterSpacing: 0.5,
+		color: palette.subtext,
+		letterSpacing: 0.4,
 	},
-	inputContainer: {
+	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: COLORS.white,
-		borderRadius: SIZES.radius,
 		borderWidth: 1,
-		borderColor: COLORS.border,
-		height: 56,
-		paddingHorizontal: 16,
+		borderColor: palette.border,
+		borderRadius: 12,
+		paddingHorizontal: 12,
+		height: 54,
+		backgroundColor: "#F8FAFC",
 	},
-	inputIcon: {
-		marginRight: 12,
-	},
-	input: {
-		flex: 1,
-		fontSize: 16,
-		color: COLORS.text,
-		height: "100%",
-	},
-	forgotPassword: {
-		alignSelf: "flex-end",
-		marginBottom: 24,
-	},
-	forgotPasswordText: {
-		color: COLORS.primary,
-		fontWeight: "600",
-		fontSize: SIZES.body3,
-	},
-	signInButton: {
-		backgroundColor: COLORS.primary,
-		height: 56,
-		borderRadius: SIZES.radius,
-		flexDirection: "row",
-		justifyContent: "center",
-		alignItems: "center",
-		...SHADOWS.primary,
-	},
-	signInButtonText: {
-		color: COLORS.white,
-		fontSize: 18,
-		fontWeight: "700",
-	},
-	footer: {
-		marginTop: 20,
-	},
-	dividerContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 24,
-	},
+	countryCode: { fontSize: 16, fontWeight: "600", color: palette.text },
 	divider: {
-		flex: 1,
-		height: 1,
-		backgroundColor: COLORS.border,
+		width: 1,
+		height: "60%",
+		backgroundColor: palette.border,
+		marginHorizontal: 10,
 	},
-	dividerText: {
-		marginHorizontal: 16,
-		color: COLORS.textPlaceholder,
-		fontSize: 12,
-	},
-	socialButtons: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		marginBottom: 30,
-	},
-	socialButton: {
-		flex: 0.48,
+	input: { flex: 1, fontSize: 16, color: palette.text },
+	primaryBtn: {
+		marginTop: 8,
+		height: 54,
+		borderRadius: 14,
+		backgroundColor: palette.primary,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: COLORS.white,
-		borderWidth: 1,
-		borderColor: COLORS.border,
-		height: 50,
-		borderRadius: SIZES.radius,
+		gap: 8,
+		shadowColor: palette.shadow,
+		shadowOpacity: 0.2,
+		shadowRadius: 10,
+		shadowOffset: { width: 0, height: 8 },
+		elevation: 4,
 	},
-	socialButtonText: {
-		marginLeft: 10,
-		fontWeight: "600",
-		color: COLORS.text,
-	},
-	signupContainer: {
-		flexDirection: "row",
-		justifyContent: "center",
-	},
-	signupText: {
-		color: COLORS.textSecondary,
-	},
-	signupLink: {
-		color: COLORS.primary,
-		fontWeight: "700",
-	},
+	primaryBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+	status: { fontSize: 13, color: palette.subtext },
+	terms: { fontSize: 12, color: palette.subtext, textAlign: "center" },
+	link: { color: palette.primaryDark, fontWeight: "700" },
 });

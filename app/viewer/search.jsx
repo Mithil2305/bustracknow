@@ -1,65 +1,63 @@
-import { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
 	FlatList,
 	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
-	TouchableOpacity,
 	View,
 } from "react-native";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
-const seedRoutes = [
-	{ id: "1", name: "Route A", from: "Central", to: "Uptown" },
-	{ id: "2", name: "Route B", from: "Central", to: "Waterfront" },
-	{ id: "3", name: "Airport Express", from: "Central", to: "Airport" },
+const seedResults = [
+	{ id: "r1", from: "Gandhipuram", to: "Airport", eta: "5m" },
+	{ id: "r2", from: "Railway Station", to: "Town Hall", eta: "8m" },
+	{ id: "r3", from: "Peelamedu", to: "Central", eta: "14m" },
 ];
 
 export default function RouteSearchScreen() {
 	const [query, setQuery] = useState("");
-	const results = useMemo(
-		() =>
-			seedRoutes.filter(
-				(r) =>
-					r.name.toLowerCase().includes(query.toLowerCase()) ||
-					r.to.toLowerCase().includes(query.toLowerCase()) ||
-					r.from.toLowerCase().includes(query.toLowerCase())
-			),
-		[query]
+
+	const filtered = seedResults.filter((r) =>
+		`${r.from} ${r.to}`.toLowerCase().includes(query.toLowerCase())
 	);
 
 	return (
 		<SafeAreaView style={styles.safe}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Search Routes</Text>
-				<TextInput
-					style={styles.input}
-					placeholder="Try 'Airport'"
-					value={query}
-					onChangeText={setQuery}
-				/>
+				<Text style={styles.title}>Route Search</Text>
+				<Text style={styles.subtitle}>Find the best bus for your trip</Text>
+
+				<View style={styles.inputRow}>
+					<Ionicons name="search" size={18} color={palette.primary} />
+					<TextInput
+						style={styles.input}
+						placeholder="Search by stop or destination"
+						value={query}
+						onChangeText={setQuery}
+						placeholderTextColor={palette.subtext}
+					/>
+				</View>
 
 				<FlatList
-					data={results}
+					data={filtered}
 					keyExtractor={(item) => item.id}
+					contentContainerStyle={{ gap: spacing.sm }}
 					renderItem={({ item }) => (
 						<View style={styles.card}>
-							<View style={{ flex: 1 }}>
-								<Text style={styles.name}>{item.name}</Text>
-								<Text style={styles.meta}>
+							<View style={{ flex: 1, gap: 2 }}>
+								<Text style={styles.routeLine}>
 									{item.from} → {item.to}
 								</Text>
+								<Text style={styles.meta}>Next bus in {item.eta}</Text>
 							</View>
-							<TouchableOpacity style={styles.badge}>
-								<Text style={styles.badgeText}>Track</Text>
-							</TouchableOpacity>
+							<Ionicons
+								name="chevron-forward"
+								size={18}
+								color={palette.subtext}
+							/>
 						</View>
-					)}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-					ListEmptyComponent={() => (
-						<Text style={{ textAlign: "center", marginTop: 20 }}>
-							No results
-						</Text>
 					)}
 				/>
 			</View>
@@ -68,34 +66,33 @@ export default function RouteSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { flex: 1, padding: 16, gap: 12 },
-	title: { fontSize: 24, fontWeight: "700" },
-	input: {
-		borderWidth: 1,
-		borderColor: "#e5e7eb",
-		borderRadius: 10,
-		padding: 12,
-		backgroundColor: "#fff",
-	},
-	card: {
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+	title: { fontSize: 24, fontWeight: "800", color: palette.text },
+	subtitle: { fontSize: 14, color: palette.subtext },
+	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 6,
-		elevation: 1,
+		borderWidth: 1,
+		borderColor: palette.border,
+		borderRadius: radius.lg,
+		paddingHorizontal: spacing.md,
+		backgroundColor: palette.card,
+		...shadow.card,
+		height: 52,
 	},
-	name: { fontSize: 16, fontWeight: "700" },
-	meta: { fontSize: 13, color: "#4b5563", marginTop: 2 },
-	badge: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 10,
-		backgroundColor: "#2563eb",
+	input: { flex: 1, marginLeft: spacing.sm, color: palette.text, fontSize: 15 },
+	card: {
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		flexDirection: "row",
+		alignItems: "center",
+		borderWidth: 1,
+		borderColor: palette.border,
+		...shadow.card,
+		gap: spacing.md,
 	},
-	badgeText: { color: "white", fontWeight: "700" },
+	routeLine: { fontSize: 16, fontWeight: "700", color: palette.text },
+	meta: { fontSize: 13, color: palette.subtext },
 });

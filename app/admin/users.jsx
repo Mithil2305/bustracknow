@@ -9,6 +9,7 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
 const seedUsers = [
 	{ id: "u1", name: "Ava Chen", role: "admin", active: true },
@@ -20,13 +21,11 @@ export default function UserManagement() {
 	const [users, setUsers] = useState(seedUsers);
 	const [search, setSearch] = useState("");
 
-	const toggleActive = (id) => {
+	const toggleActive = (id) =>
 		setUsers((prev) =>
 			prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u))
 		);
-	};
-
-	const toggleRole = (id) => {
+	const toggleRole = (id) =>
 		setUsers((prev) =>
 			prev.map((u) =>
 				u.id === id
@@ -34,7 +33,6 @@ export default function UserManagement() {
 					: u
 			)
 		);
-	};
 
 	const filtered = users.filter(
 		(u) =>
@@ -51,11 +49,13 @@ export default function UserManagement() {
 					placeholder="Search by name or role"
 					value={search}
 					onChangeText={setSearch}
+					placeholderTextColor={palette.subtext}
 				/>
 
 				<FlatList
 					data={filtered}
 					keyExtractor={(item) => item.id}
+					contentContainerStyle={{ gap: spacing.sm }}
 					renderItem={({ item }) => (
 						<View style={styles.card}>
 							<View style={{ flex: 1 }}>
@@ -78,7 +78,6 @@ export default function UserManagement() {
 							</View>
 						</View>
 					)}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 				/>
 
 				<TouchableOpacity style={styles.primary}>
@@ -90,43 +89,47 @@ export default function UserManagement() {
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { flex: 1, padding: 16, gap: 12 },
-	title: { fontSize: 24, fontWeight: "700" },
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+	title: { fontSize: 24, fontWeight: "800", color: palette.text },
 	input: {
 		borderWidth: 1,
-		borderColor: "#e5e7eb",
-		borderRadius: 10,
-		padding: 12,
-		backgroundColor: "#fff",
+		borderColor: palette.border,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		backgroundColor: palette.card,
+		color: palette.text,
+		...shadow.card,
 	},
 	card: {
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		borderWidth: 1,
+		borderColor: palette.border,
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 6,
-		elevation: 1,
+		gap: spacing.md,
+		...shadow.card,
 	},
-	name: { fontSize: 16, fontWeight: "700" },
-	meta: { fontSize: 13, color: "#4b5563", marginTop: 2 },
-	row: { flexDirection: "row", alignItems: "center", gap: 8 },
+	name: { fontSize: 16, fontWeight: "700", color: palette.text },
+	meta: { fontSize: 13, color: palette.subtext },
+	row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
 	role: {
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		borderRadius: 10,
-		backgroundColor: "#2563eb",
+		paddingHorizontal: spacing.md,
+		paddingVertical: spacing.xs,
+		borderRadius: radius.lg,
+		backgroundColor: "#E0F2FE",
 	},
-	roleText: { color: "white", fontWeight: "700" },
+	roleText: { color: palette.primaryDark, fontWeight: "700" },
 	primary: {
-		marginTop: 8,
-		backgroundColor: "#2563eb",
-		padding: 14,
-		borderRadius: 12,
+		marginTop: spacing.md,
+		height: 52,
+		borderRadius: radius.lg,
+		backgroundColor: palette.primary,
 		alignItems: "center",
+		justifyContent: "center",
+		...shadow.elevated,
 	},
-	primaryText: { color: "white", fontWeight: "700" },
+	primaryText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 });

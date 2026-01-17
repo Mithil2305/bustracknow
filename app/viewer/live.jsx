@@ -7,6 +7,7 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
 const seedBuses = [
 	{ id: "b1", route: "Route A", eta: "2m", occupancy: "Low" },
@@ -18,31 +19,40 @@ export default function LiveTrackingScreen() {
 	const [buses, setBuses] = useState(seedBuses);
 
 	const refresh = () => {
-		setBuses((prev) => [...prev].reverse());
+		setBuses((prev) =>
+			prev.map((b, i) => ({
+				...b,
+				eta: `${Math.max(0, parseInt(b.eta) - (i + 1))}m`,
+			}))
+		);
 	};
 
 	return (
 		<SafeAreaView style={styles.safe}>
 			<View style={styles.container}>
 				<Text style={styles.title}>Live Tracking</Text>
+				<Text style={styles.subtitle}>Nearby active buses</Text>
+
 				<View style={styles.mapPlaceholder}>
-					<Text style={styles.mapText}>Map placeholder</Text>
+					<Text style={styles.mapText}>Map preview placeholder</Text>
 				</View>
 
 				<FlatList
 					data={buses}
 					keyExtractor={(item) => item.id}
-					style={{ marginTop: 12 }}
+					contentContainerStyle={{ gap: spacing.sm }}
 					renderItem={({ item }) => (
-						<View style={styles.card}>
-							<View style={{ flex: 1 }}>
-								<Text style={styles.route}>{item.route}</Text>
-								<Text style={styles.meta}>ETA: {item.eta}</Text>
+						<View style={styles.busCard}>
+							<View style={styles.busInfo}>
+								<Text style={styles.busRoute}>{item.route}</Text>
+								<Text style={styles.busMeta}>Occupancy: {item.occupancy}</Text>
 							</View>
-							<Text style={styles.badge}>{item.occupancy}</Text>
+							<View style={styles.busEta}>
+								<Text style={styles.etaText}>{item.eta}</Text>
+								<Text style={styles.etaLabel}>ETA</Text>
+							</View>
 						</View>
 					)}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 				/>
 
 				<TouchableOpacity style={styles.primary} onPress={refresh}>
@@ -54,44 +64,44 @@ export default function LiveTrackingScreen() {
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { flex: 1, padding: 16, gap: 12 },
-	title: { fontSize: 24, fontWeight: "700" },
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+	title: { fontSize: 24, fontWeight: "800", color: palette.text },
+	subtitle: { fontSize: 14, color: palette.subtext },
 	mapPlaceholder: {
 		height: 180,
-		borderRadius: 14,
-		backgroundColor: "#e0e7ff",
+		borderRadius: radius.lg,
+		backgroundColor: "#E0E7FF",
 		alignItems: "center",
 		justifyContent: "center",
+		...shadow.card,
 	},
-	mapText: { fontSize: 16, fontWeight: "700", color: "#1d4ed8" },
-	card: {
+	mapText: { color: palette.subtext, fontWeight: "600" },
+	busCard: {
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
 		flexDirection: "row",
+		justifyContent: "space-between",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 6,
-		elevation: 1,
+		borderWidth: 1,
+		borderColor: palette.border,
+		...shadow.card,
 	},
-	route: { fontSize: 16, fontWeight: "700" },
-	meta: { fontSize: 13, color: "#4b5563", marginTop: 2 },
-	badge: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 999,
-		backgroundColor: "#2563eb",
-		color: "white",
-		fontWeight: "700",
-	},
+	busInfo: { gap: 4 },
+	busRoute: { fontSize: 16, fontWeight: "700", color: palette.text },
+	busMeta: { fontSize: 13, color: palette.subtext },
+	busEta: { alignItems: "flex-end", gap: 2 },
+	etaText: { fontSize: 18, fontWeight: "800", color: palette.primaryDark },
+	etaLabel: { fontSize: 12, color: palette.subtext },
 	primary: {
-		marginTop: 8,
-		backgroundColor: "#2563eb",
-		padding: 14,
-		borderRadius: 12,
+		marginTop: spacing.md,
+		height: 52,
+		borderRadius: radius.lg,
+		backgroundColor: palette.primary,
 		alignItems: "center",
+		justifyContent: "center",
+		...shadow.elevated,
 	},
-	primaryText: { color: "white", fontWeight: "700" },
+	primaryText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

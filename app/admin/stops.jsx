@@ -8,32 +8,27 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import { palette, radius, shadow, spacing } from "../design/tokens";
 
 const seedStops = [
-	{ id: "s1", name: "Central Station", code: "CEN", priority: "High" },
-	{ id: "s2", name: "Waterfront", code: "WTF", priority: "Medium" },
-	{ id: "s3", name: "Airport T1", code: "APT", priority: "High" },
+	{ id: "s1", name: "Central Bus Stand", area: "Downtown", active: true },
+	{ id: "s2", name: "City Mall", area: "North", active: true },
+	{ id: "s3", name: "Industrial Park", area: "East", active: false },
 ];
 
 export default function StopManagement() {
 	const [stops, setStops] = useState(seedStops);
 	const [search, setSearch] = useState("");
 
-	const filtered = stops.filter(
-		(s) =>
-			s.name.toLowerCase().includes(search.toLowerCase()) ||
-			s.code.toLowerCase().includes(search.toLowerCase())
-	);
-
-	const promote = (id) => {
+	const toggle = (id) => {
 		setStops((prev) =>
-			prev.map((s) =>
-				s.id === id
-					? { ...s, priority: s.priority === "High" ? "Medium" : "High" }
-					: s
-			)
+			prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
 		);
 	};
+
+	const filtered = stops.filter((s) =>
+		`${s.name} ${s.area}`.toLowerCase().includes(search.toLowerCase())
+	);
 
 	return (
 		<SafeAreaView style={styles.safe}>
@@ -41,33 +36,44 @@ export default function StopManagement() {
 				<Text style={styles.title}>Stops</Text>
 				<TextInput
 					style={styles.input}
-					placeholder="Search by name or code"
+					placeholder="Search stops"
 					value={search}
 					onChangeText={setSearch}
+					placeholderTextColor={palette.subtext}
 				/>
 
 				<FlatList
 					data={filtered}
 					keyExtractor={(item) => item.id}
+					contentContainerStyle={{ gap: spacing.sm }}
 					renderItem={({ item }) => (
-						<View style={styles.card}>
-							<View style={{ flex: 1 }}>
+						<View style={styles.stopCard}>
+							<View style={{ flex: 1, gap: 2 }}>
 								<Text style={styles.stopName}>{item.name}</Text>
-								<Text style={styles.meta}>Code: {item.code}</Text>
+								<Text style={styles.meta}>{item.area}</Text>
 							</View>
 							<TouchableOpacity
-								style={styles.priority}
-								onPress={() => promote(item.id)}
+								style={[
+									styles.statusPill,
+									{ backgroundColor: item.active ? "#DCFCE7" : "#FEF3C7" },
+								]}
+								onPress={() => toggle(item.id)}
 							>
-								<Text style={styles.priorityText}>{item.priority}</Text>
+								<Text
+									style={{
+										color: item.active ? palette.secondary : "#F59E0B",
+										fontWeight: "700",
+									}}
+								>
+									{item.active ? "Active" : "Paused"}
+								</Text>
 							</TouchableOpacity>
 						</View>
 					)}
-					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 				/>
 
 				<TouchableOpacity style={styles.primary}>
-					<Text style={styles.primaryText}>Add demo stop</Text>
+					<Text style={styles.primaryText}>Add stop</Text>
 				</TouchableOpacity>
 			</View>
 		</SafeAreaView>
@@ -75,42 +81,44 @@ export default function StopManagement() {
 }
 
 const styles = StyleSheet.create({
-	safe: { flex: 1, backgroundColor: "#f7f9fc" },
-	container: { flex: 1, padding: 16, gap: 12 },
-	title: { fontSize: 24, fontWeight: "700" },
+	safe: { flex: 1, backgroundColor: palette.surface },
+	container: { flex: 1, padding: spacing.lg, gap: spacing.md },
+	title: { fontSize: 24, fontWeight: "800", color: palette.text },
 	input: {
 		borderWidth: 1,
-		borderColor: "#e5e7eb",
-		borderRadius: 10,
-		padding: 12,
-		backgroundColor: "#fff",
+		borderColor: palette.border,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		backgroundColor: palette.card,
+		color: palette.text,
+		...shadow.card,
 	},
-	card: {
+	stopCard: {
+		backgroundColor: palette.card,
+		borderRadius: radius.lg,
+		padding: spacing.md,
+		borderWidth: 1,
+		borderColor: palette.border,
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 6,
-		elevation: 1,
+		gap: spacing.sm,
+		...shadow.card,
 	},
-	stopName: { fontSize: 16, fontWeight: "700" },
-	meta: { fontSize: 13, color: "#4b5563", marginTop: 2 },
-	priority: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 999,
-		backgroundColor: "#2563eb",
+	stopName: { fontSize: 16, fontWeight: "700", color: palette.text },
+	meta: { fontSize: 13, color: palette.subtext },
+	statusPill: {
+		borderRadius: radius.lg,
+		paddingHorizontal: spacing.md,
+		paddingVertical: spacing.xs,
 	},
-	priorityText: { color: "white", fontWeight: "700" },
 	primary: {
-		marginTop: 8,
-		backgroundColor: "#2563eb",
-		padding: 14,
-		borderRadius: 12,
+		marginTop: spacing.md,
+		height: 52,
+		borderRadius: radius.lg,
+		backgroundColor: palette.primary,
 		alignItems: "center",
+		justifyContent: "center",
+		...shadow.elevated,
 	},
-	primaryText: { color: "white", fontWeight: "700" },
+	primaryText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 });

@@ -1,102 +1,252 @@
-import { Link } from "expo-router";
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import {
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from "react-native";
+import { palette, radius, shadow, spacing } from "./design/tokens";
 
-const quickLinks = [
+const isAdmin = false; // TODO: replace with real auth/role check
+
+const essentials = [
 	{
-		title: "Viewer",
-		links: [
-			{ label: "Home", href: "/viewer" },
-			{ label: "Live Tracking", href: "/viewer/live" },
-			{ label: "Route Search", href: "/viewer/search" },
-			{ label: "Contribute", href: "/viewer/contribute" },
-		],
+		label: "Live Tracking",
+		href: "/viewer/live",
+		icon: "locate-outline",
+		tag: "Live",
 	},
 	{
-		title: "Admin",
-		links: [
-			{ label: "Dashboard", href: "/admin" },
-			{ label: "Routes", href: "/admin/routes" },
-			{ label: "Stops", href: "/admin/stops" },
-			{ label: "Users", href: "/admin/users" },
-			{ label: "God Mode Map", href: "/admin/god-mode" },
-		],
+		label: "Route Search",
+		href: "/viewer/search",
+		icon: "search-outline",
+		tag: "Plan",
 	},
 	{
-		title: "Account",
-		links: [
-			{ label: "Login", href: "/login" },
-			{ label: "OTP", href: "/otp" },
-			{ label: "Profile", href: "/profile" },
-			{ label: "Settings", href: "/settings" },
-		],
+		label: "Contribute",
+		href: "/viewer/contribute",
+		icon: "megaphone-outline",
+		tag: "Report",
+	},
+	{
+		label: "Profile",
+		href: "/profile",
+		icon: "person-circle-outline",
+		tag: "You",
+	},
+	{
+		label: "Settings",
+		href: "/settings",
+		icon: "settings-outline",
+		tag: "Prefs",
+	},
+	{ label: "Login / OTP", href: "/login", icon: "key-outline", tag: "Access" },
+];
+
+const adminTiles = [
+	{
+		label: "Admin Dashboard",
+		href: "/admin",
+		icon: "speedometer-outline",
+		tag: "Admin",
+	},
+	{
+		label: "Routes",
+		href: "/admin/routes",
+		icon: "git-branch-outline",
+		tag: "Routes",
+	},
+	{ label: "Stops", href: "/admin/stops", icon: "pin-outline", tag: "Stops" },
+	{
+		label: "Users",
+		href: "/admin/users",
+		icon: "people-outline",
+		tag: "Users",
+	},
+	{
+		label: "God Mode Map",
+		href: "/admin/god-mode",
+		icon: "planet-outline",
+		tag: "Map",
+	},
+];
+
+const bottomNav = [
+	{ label: "Home", icon: "home-outline", href: "/" },
+	{ label: "Bus", icon: "bus-outline", href: "/viewer" },
+	{ label: "Settings", icon: "settings-outline", href: "/settings" },
+	{
+		label: "God Mode",
+		icon: "planet-outline",
+		href: "/admin/god-mode",
+		adminOnly: true,
 	},
 ];
 
 export default function HomeScreen() {
+	const router = useRouter();
+	const navItems = bottomNav.filter((item) => !item.adminOnly || isAdmin);
+	const tiles = isAdmin ? [...essentials, ...adminTiles] : essentials;
+
 	return (
 		<SafeAreaView style={styles.safe}>
-			<ScrollView contentContainerStyle={styles.container}>
-				<Text style={styles.title}>BusTrackNow</Text>
-				<Text style={styles.subtitle}>
-					Jump into any area to test viewer and admin flows.
-				</Text>
-				<View style={styles.grid}>
-					{quickLinks.map((section) => (
-						<View key={section.title} style={styles.card}>
-							<Text style={styles.cardTitle}>{section.title}</Text>
-							{section.links.map((link) => (
-								<Link key={link.href} href={link.href} style={styles.link}>
-									{link.label}
-								</Link>
-							))}
+			<View style={styles.wrap}>
+				<ScrollView
+					contentContainerStyle={styles.container}
+					showsVerticalScrollIndicator={false}
+				>
+					<View style={styles.header}>
+						<View>
+							<Text style={styles.title}>BusTrackNow</Text>
+							<Text style={styles.subtitle}>
+								Your essential tools in one place.
+							</Text>
 						</View>
-					))}
+						<View style={styles.badge}>
+							<Ionicons
+								name="shield-checkmark"
+								size={16}
+								color={palette.secondary}
+							/>
+							<Text style={styles.badgeText}>Secure</Text>
+						</View>
+					</View>
+
+					<View style={styles.grid}>
+						{tiles.map((item) => (
+							<TouchableOpacity
+								key={item.href}
+								style={styles.tile}
+								activeOpacity={0.9}
+								onPress={() => router.push(item.href)}
+							>
+								<View style={styles.tileTop}>
+									<View style={styles.iconCircle}>
+										<Ionicons
+											name={item.icon}
+											size={18}
+											color={palette.primary}
+										/>
+									</View>
+									<Text style={styles.tag}>{item.tag}</Text>
+								</View>
+								<Text style={styles.tileLabel}>{item.label}</Text>
+								<View style={styles.tileFooter}>
+									<Text style={styles.cta}>Open</Text>
+									<Ionicons
+										name="chevron-forward"
+										size={16}
+										color={palette.subtext}
+									/>
+								</View>
+							</TouchableOpacity>
+						))}
+					</View>
+				</ScrollView>
+
+				<View style={styles.navbarContainer}>
+					<View style={styles.navbar}>
+						{navItems.map((item) => (
+							<TouchableOpacity
+								key={item.href}
+								style={styles.navItem}
+								activeOpacity={0.8}
+								onPress={() => router.push(item.href)}
+							>
+								<Ionicons name={item.icon} size={20} color={palette.text} />
+								<Text style={styles.navLabel}>{item.label}</Text>
+							</TouchableOpacity>
+						))}
+					</View>
 				</View>
-			</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
+	// Extra inset at top/bottom to leave room for status icons and system gesture/back bar
 	safe: {
 		flex: 1,
-		backgroundColor: "#f7f9fc",
+		backgroundColor: palette.surface,
+		paddingTop: spacing.lg,
+		paddingBottom: spacing.lg,
 	},
+	wrap: { flex: 1 },
 	container: {
-		padding: 16,
-		gap: 12,
+		paddingHorizontal: spacing.lg,
+		paddingTop: spacing.sm,
+		paddingBottom: spacing.xl, // keeps scrollable content above navbar
+		gap: spacing.md,
 	},
-	title: {
-		fontSize: 26,
-		fontWeight: "700",
-		marginBottom: 4,
+	header: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 	},
-	subtitle: {
-		fontSize: 14,
-		color: "#4b5563",
-		marginBottom: 12,
+	title: { fontSize: 26, fontWeight: "800", color: palette.text },
+	subtitle: { fontSize: 14, color: palette.subtext, marginTop: 2 },
+	badge: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: spacing.xs,
+		paddingHorizontal: spacing.sm,
+		paddingVertical: spacing.xs,
+		borderRadius: radius.lg,
+		backgroundColor: "#E8FFF4",
 	},
-	grid: {
-		flexDirection: "column",
-		gap: 12,
+	badgeText: { color: palette.secondary, fontWeight: "700", fontSize: 12 },
+	grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+	tile: {
+		width: "48%",
+		backgroundColor: palette.card,
+		borderRadius: radius.xl,
+		padding: spacing.md,
+		gap: spacing.xs,
+		...shadow.card,
 	},
-	card: {
-		backgroundColor: "#fff",
-		padding: 14,
-		borderRadius: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
-		gap: 8,
+	tileTop: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 	},
-	cardTitle: {
-		fontSize: 18,
-		fontWeight: "600",
+	iconCircle: {
+		width: 34,
+		height: 34,
+		borderRadius: radius.md,
+		backgroundColor: "#E7F0FF",
+		alignItems: "center",
+		justifyContent: "center",
 	},
-	link: {
-		fontSize: 15,
-		color: "#2563eb",
-		paddingVertical: 4,
+	tag: { fontSize: 12, color: palette.subtext, fontWeight: "700" },
+	tileLabel: {
+		fontSize: 16,
+		fontWeight: "800",
+		color: palette.text,
+		marginTop: 4,
 	},
+	tileFooter: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginTop: spacing.xs,
+	},
+	cta: { color: palette.primary, fontWeight: "700", fontSize: 13 },
+	navbarContainer: {
+		borderTopWidth: 1,
+		borderTopColor: palette.border,
+		backgroundColor: palette.card,
+		paddingBottom: spacing.md, // extra bottom inset for system gestures/back bar
+		paddingTop: spacing.sm,
+	},
+	navbar: {
+		flexDirection: "row",
+		justifyContent: "space-around",
+		paddingHorizontal: spacing.md,
+	},
+	navItem: { alignItems: "center", gap: 4, paddingVertical: spacing.xs },
+	navLabel: { fontSize: 12, fontWeight: "700", color: palette.text },
 });
