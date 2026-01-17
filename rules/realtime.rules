@@ -1,0 +1,37 @@
+{
+"rules": {
+// Public read access for bus locations allows the map to update for everyone
+"buses": {
+".read": true,
+
+  // Wildcard for individual bus IDs
+  "$busId": {
+    // Write access:
+    // 1. User must be authenticated
+    // 2. Ideally, we should check if the user is authorized to drive this bus.
+    //    For this MVP, we allow any authenticated user to write to a bus node
+    //    if they claim to be broadcasting.
+    ".write": "auth != null",
+    
+    // Validation: Data must have a timestamp and coordinates
+    ".validate": "newData.hasChildren(['lat', 'lng', 'timestamp']) && newData.child('timestamp').isNumber()"
+  }
+},
+
+// User specific location data (if tracking specific users separate from buses)
+"users": {
+  "$userId": {
+    ".read": "$userId === auth.uid",
+    ".write": "$userId === auth.uid"
+  }
+},
+
+// Administrative logs or server status
+"admin_logs": {
+  ".read": false,
+  ".write": false 
+}
+
+
+}
+}

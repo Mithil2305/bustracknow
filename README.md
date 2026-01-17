@@ -1,4 +1,86 @@
-### folder structure
+BusTrackNow 🚌
+
+Crowdsourced Real-Time Public Bus Tracking for Tier 2 & Tier 3 Cities.
+
+BusTrackNow operates on a "Human-as-Sensor" model where passengers voluntarily broadcast their location to help others. Designed with a Zero-Cost Architecture, it leverages the Firebase Spark Plan and Cloudflare R2 to eliminate recurring server costs, relying on "Smart Client" logic rather than expensive cloud functions.
+
+🚀 Features
+
+📱 For Commuters (Viewers)
+
+Live Tracking: Real-time bus movement on the map using Firebase Realtime Database.
+
+Offline-First: Routes and stops are cached locally; the app works even with spotty internet.
+
+Smart Search: Quickly find buses by route number or destination.
+
+📡 For Contributors
+
+Broadcast Mode: Passengers can "Go Live" to share their bus's location.
+
+Trust System: Crowd-validation logic ensures data accuracy.
+
+Battery Efficient: Optimized geolocation updates to minimize drain.
+
+🛡️ Admin (God Mode)
+
+Route Management: Create and edit routes/stops directly from the app.
+
+User Management: Monitor trust scores and ban malicious actors.
+
+Global Overview: View all active buses in the city simultaneously.
+
+🛠 Tech Stack
+
+Component
+
+Technology
+
+Description
+
+Framework
+
+React Native (Expo)
+
+Cross-platform (iOS/Android) with Expo Router.
+
+Styling
+
+NativeWind
+
+Tailwind CSS for React Native.
+
+Auth
+
+Firebase Auth
+
+Phone (OTP) and Email authentication.
+
+Live DB
+
+Realtime Database
+
+High-frequency, ephemeral GPS updates.
+
+Static DB
+
+Cloud Firestore
+
+Persistent data (Routes, Stops, User Profiles).
+
+Storage
+
+Cloudflare R2
+
+Zero egress fees for profile pics & assets.
+
+State
+
+Zustand
+
+Lightweight global state management.
+
+📂 Project Structure
 
 ```
 bustracknow/
@@ -142,3 +224,70 @@ bustracknow/
    └─ uuid.js
 
 ```
+
+🏗️ Architecture
+
+1. The "Smart Client"
+
+To maintain the "Zero Cost" promise, complex logic is handled on the user's device (/logic folder) rather than server-side functions:
+
+Geo-Fencing: The app checks if a broadcaster is actually near the route path (logic/geo/polylineMatcher.js).
+
+Auto-Termination: Accelerometer monitoring detects if a user gets off the bus and forgets to stop broadcasting.
+
+2. Data Flow
+
+Static Data (Routes/Stops): Fetched from Firestore and cached locally using AsyncStorage.
+
+Live Data: Broadcasters write ephemeral coordinates to Realtime Database. Viewers subscribe to these changes.
+
+Assets: Images are uploaded directly to Cloudflare R2.
+
+⚡ Getting Started
+
+Prerequisites
+
+Node.js & npm/yarn
+
+Expo CLI (npm install -g expo-cli)
+
+Firebase Project Credentials
+
+Installation
+
+Clone the repository
+
+git clone [https://github.com/your-username/bustracknow.git](https://github.com/your-username/bustracknow.git)
+cd bustracknow
+
+Install dependencies
+
+npm install
+
+Environment Setup
+Create a .env file in the root directory (refer to config/env.js):
+
+EXPO_PUBLIC_FIREBASE_API_KEY=your_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+
+# ... other firebase config keys
+
+Run the App
+
+npx expo start
+
+🤝 Contributing
+
+Fork the Project
+
+Create your Feature Branch (git checkout -b feature/AmazingFeature)
+
+Commit your Changes (git commit -m 'Add some AmazingFeature')
+
+Push to the Branch (git push origin feature/AmazingFeature)
+
+Open a Pull Request
+
+License: MIT
+Contact: support@bustracknow.com
