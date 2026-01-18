@@ -1,14 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-	FlatList,
-	SafeAreaView,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
-} from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const seedResults = [
 	{ id: "r1", from: "Gandhipuram", to: "Airport", eta: "5m" },
@@ -20,7 +14,7 @@ export default function RouteSearchScreen() {
 	const [query, setQuery] = useState("");
 
 	const filtered = seedResults.filter((r) =>
-		`${r.from} ${r.to}`.toLowerCase().includes(query.toLowerCase())
+		`${r.from} ${r.to}`.toLowerCase().includes(query.toLowerCase()),
 	);
 
 	return (

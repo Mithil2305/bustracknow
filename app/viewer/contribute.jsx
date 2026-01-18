@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 export default function ContributionScreen() {
 	const [route, setRoute] = useState("");

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
 	FlatList,
-	SafeAreaView,
 	StyleSheet,
 	Switch,
 	Text,
@@ -9,7 +8,8 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const seedUsers = [
 	{ id: "u1", name: "Ava Chen", role: "admin", active: true },
@@ -23,21 +23,21 @@ export default function UserManagement() {
 
 	const toggleActive = (id) =>
 		setUsers((prev) =>
-			prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u))
+			prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)),
 		);
 	const toggleRole = (id) =>
 		setUsers((prev) =>
 			prev.map((u) =>
 				u.id === id
 					? { ...u, role: u.role === "admin" ? "viewer" : "admin" }
-					: u
-			)
+					: u,
+			),
 		);
 
 	const filtered = users.filter(
 		(u) =>
 			u.name.toLowerCase().includes(search.toLowerCase()) ||
-			u.role.toLowerCase().includes(search.toLowerCase())
+			u.role.toLowerCase().includes(search.toLowerCase()),
 	);
 
 	return (

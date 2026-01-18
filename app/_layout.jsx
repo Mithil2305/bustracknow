@@ -1,12 +1,10 @@
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Slot } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-export default function RootLayout() {
+export default function Layout() {
 	return (
-		<SafeAreaProvider>
-			<StatusBar style="auto" />
-			<Stack screenOptions={{ headerShown: false }} />
-		</SafeAreaProvider>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<Slot />
+		</GestureHandlerRootView>
 	);
 }

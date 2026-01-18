@@ -2,7 +2,6 @@ import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
 	Image,
-	SafeAreaView,
 	ScrollView,
 	StatusBar,
 	StyleSheet,
@@ -10,7 +9,8 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const MockMapBackground = () => (
 	<View style={styles.mapContainer}>

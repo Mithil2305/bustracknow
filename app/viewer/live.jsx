@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
 	FlatList,
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const seedBuses = [
 	{ id: "b1", route: "Route A", eta: "2m", occupancy: "Low" },
@@ -23,7 +23,7 @@ export default function LiveTrackingScreen() {
 			prev.map((b, i) => ({
 				...b,
 				eta: `${Math.max(0, parseInt(b.eta) - (i + 1))}m`,
-			}))
+			})),
 		);
 	};
 

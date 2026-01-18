@@ -1,5 +1,9 @@
+// app/services/firebase/firebaseConfig.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import {
+	getAnalytics,
+	isSupported as isAnalyticsSupported,
+} from "firebase/analytics";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import {
 	getAuth,
@@ -8,54 +12,57 @@ import {
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";
-import {
-	FIREBASE_API_KEY,
-	FIREBASE_APP_ID,
-	FIREBASE_AUTH_DOMAIN,
-	FIREBASE_MEASUREMENT_ID,
-	FIREBASE_MESSAGING_SENDER_ID,
-	FIREBASE_PROJECT_ID,
-	FIREBASE_STORAGE_BUCKET,
-} from "../../config/env"; // Assuming you have an env file
+import env from "../../config/env";
 
 const firebaseConfig = {
-	apiKey: FIREBASE_API_KEY,
-	authDomain: FIREBASE_AUTH_DOMAIN,
-	databaseURL: `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`, // Typical RTDB URL format
-	projectId: FIREBASE_PROJECT_ID,
-	storageBucket: FIREBASE_STORAGE_BUCKET,
-	messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
-	appId: FIREBASE_APP_ID,
-	measurementId: FIREBASE_MEASUREMENT_ID,
+	apiKey: env.FIREBASE_API_KEY,
+	authDomain: env.FIREBASE_AUTH_DOMAIN,
+	projectId: env.FIREBASE_PROJECT_ID,
+	storageBucket: env.FIREBASE_STORAGE_BUCKET,
+	messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
+	appId: env.FIREBASE_APP_ID,
+	measurementId: env.FIREBASE_MEASUREMENT_ID || undefined,
 };
 
-// Initialize Firebase (Singleton Pattern)
-let app;
-let auth;
-let db;
-let rtdb;
-let analytics;
+const missingFirebaseValues = Object.entries(firebaseConfig)
+	.filter(([key, value]) => !value && key !== "measurementId")
+	.map(([key]) => key);
 
-if (!getApps().length) {
-	app = initializeApp(firebaseConfig);
-
-	// Initialize Auth with AsyncStorage persistence for React Native
-	auth = initializeAuth(app, {
-		persistence: getReactNativePersistence(AsyncStorage),
-	});
-} else {
-	app = getApp();
-	auth = getAuth(app);
+if (missingFirebaseValues.length > 0) {
+	console.warn(
+		`firebaseConfig: missing Firebase env values: ${missingFirebaseValues.join(", ")}`,
+	);
 }
 
-db = getFirestore(app);
-rtdb = getDatabase(app);
+// Ensure we only initialize once (helps with HMR / fast refresh)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Analytics is often web-only or requires native linking, checking support safely
-isSupported().then((supported) => {
-	if (supported) {
-		analytics = getAnalytics(app);
-	}
-});
+// Use React Native persistence when running in RN; fallback to getAuth on web
+const isReactNative =
+	typeof navigator !== "undefined" && navigator.product === "ReactNative";
 
-export { analytics, app, auth, db, rtdb };
+export const auth = isReactNative
+	? initializeAuth(app, {
+			persistence: getReactNativePersistence(AsyncStorage),
+		})
+	: getAuth(app);
+export const db = getFirestore(app);
+export const firestore = db; // backwards compatibility
+export const rtdb = getDatabase(app);
+
+let analytics = null;
+// firebase/analytics works only on web; guard to avoid native crashes
+if (typeof window !== "undefined") {
+	isAnalyticsSupported()
+		.then((supported) => {
+			if (supported) {
+				analytics = getAnalytics(app);
+			}
+		})
+		.catch(() => {
+			// ignore analytics setup errors on unsupported platforms
+		});
+}
+
+export { analytics };
+export default app;

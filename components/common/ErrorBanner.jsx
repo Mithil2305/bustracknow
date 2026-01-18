@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
-import { palette, radius, spacing } from "../../app/design/tokens";
+import { palette, radius, spacing } from "../../design/tokens";
 
 export default function ErrorBanner({
 	message = "Something went wrong",

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { SafeAreaView, StyleSheet, Switch, Text, View } from "react-native";
-import { palette, radius, shadow, spacing } from "../../app/design/tokens";
+import { StyleSheet, Switch, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const Row = ({ label, value, onChange }) => (
 	<View style={styles.row}>

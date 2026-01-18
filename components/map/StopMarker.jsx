@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { palette, radius, shadow, spacing } from "../../app/design/tokens";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 export default function StopMarker({
 	name = "Stop",

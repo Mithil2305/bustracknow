@@ -5,7 +5,7 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../../app/design/tokens";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 export default function Button({
 	label,
@@ -22,13 +22,13 @@ export default function Button({
 	const bg = isGhost
 		? "transparent"
 		: isSecondary
-		? "#E7F0FF"
-		: palette.primary;
+			? "#E7F0FF"
+			: palette.primary;
 	const color = isGhost
 		? palette.primaryDark
 		: isSecondary
-		? palette.primaryDark
-		: "#fff";
+			? palette.primaryDark
+			: "#fff";
 	const borderColor = isGhost ? palette.primary : "transparent";
 
 	return (

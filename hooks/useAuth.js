@@ -1,42 +1,31 @@
-import { useCallback } from "react";
-import { useAuthStore } from "../store/authStore";
+// app/hooks/useAuth.js
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../services/firebase/firebaseConfig";
 
-/**
- * Auth convenience hook.
- * Expected store shape (adjust if different):
- * - state: { user, loading, error, token }
- * - actions: login(phone, otp), logout(), refresh()
- */
-export function useAuth() {
-	const user = useAuthStore((s) => s.user);
-	const loading = useAuthStore((s) => s.loading);
-	const error = useAuthStore((s) => s.error);
-	const token = useAuthStore((s) => s.token);
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  setUser: () => {}
+});
 
-	const login = useAuthStore((s) => s.login);
-	const logout = useAuthStore((s) => s.logout);
-	const refresh = useAuthStore((s) => s.refresh);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-	const isAuthenticated = !!user?.id || !!token;
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u || null);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
-	const loginWithPhoneOtp = useCallback(
-		async (phone, otp) => {
-			if (!login) return;
-			return login(phone, otp);
-		},
-		[login],
-	);
+  return (
+    <AuthContext.Provider value={{ user, setUser, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-	return {
-		user,
-		token,
-		loading,
-		error,
-		isAuthenticated,
-		login: loginWithPhoneOtp,
-		refresh,
-		logout,
-	};
-}
-
-export default useAuth;
+export const useAuth = () => useContext(AuthContext);

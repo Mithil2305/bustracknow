@@ -1,6 +1,7 @@
-import { StyleSheet, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import { radius, shadow, spacing } from "../../app/design/tokens";
+import { Platform, StyleSheet, View } from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import env from "../../config/env";
+import { radius, shadow, spacing } from "../../design/tokens";
 import BusMarker from "./BusMarker";
 import RoutePolyline from "./RoutePolyline";
 import StopMarker from "./StopMarker";
@@ -20,9 +21,19 @@ export default function LiveMap({
 	style,
 	children,
 }) {
+	const provider =
+		Platform.OS === "android" || Platform.OS === "ios"
+			? PROVIDER_GOOGLE
+			: undefined;
+
 	return (
 		<View style={[styles.card, style]}>
-			<MapView style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
+			<MapView
+				provider={provider}
+				googleMapsApiKey={env.GOOGLE_MAPS_API_KEY || undefined}
+				style={StyleSheet.absoluteFill}
+				initialRegion={initialRegion}
+			>
 				{route.length > 0 && <RoutePolyline coordinates={route} />}
 				{stops.map((s) => (
 					<Marker

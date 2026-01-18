@@ -15,6 +15,11 @@ const env = {
 	FIREBASE_MESSAGING_SENDER_ID:
 		process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
 	FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "",
+	FIREBASE_MEASUREMENT_ID:
+		process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
+
+	// Maps
+	GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "",
 
 	// Feature Flags
 	ENABLE_GOD_MODE: process.env.EXPO_PUBLIC_ENABLE_GOD_MODE === "true",
@@ -34,6 +39,10 @@ if (!env.FIREBASE_API_KEY) {
 	console.warn(
 		"config/env.js: Missing FIREBASE_API_KEY. Check your .env file.",
 	);
+}
+
+if (!env.GOOGLE_MAPS_API_KEY) {
+	console.warn("config/env.js: Missing GOOGLE_MAPS_API_KEY. Maps may fail.");
 }
 
 export default env;

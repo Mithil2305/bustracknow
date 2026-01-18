@@ -97,10 +97,7 @@ bustracknow/
 │  └─ settings.json
 ├─ app/
 │  ├─ _layout.jsx
-│  ├─ App.jsx
-│  ├─ index.js
-│  ├─ login.jsx
-│  ├─ otp.jsx
+│  ├─ index.jsx
 │  ├─ profile.jsx
 │  ├─ settings.jsx
 │  ├─ splash.jsx
@@ -115,13 +112,19 @@ bustracknow/
 │  ├─ navigation/
 │  │  ├─ AdminNavigator.jsx
 │  │  ├─ RootNavigator.jsx
-│  │  └─ ViewerNavigator.jsx
+│  │  ├─ ViewerNavigator.jsx
+│  │  ├─ linking.js
+│  │  └─ stacks/
+│  │     └─ AuthStack.jsx
 │  └─ viewer/
 │     ├─ contribute.jsx
 │     ├─ index.jsx
 │     ├─ live.jsx
 │     └─ search.jsx
-├─ app.json
+├─ app.config.js
+├─ .env.example
+├─ assets/
+│  └─ logo.png
 ├─ components/
 │  ├─ admin/
 │  │  ├─ AdminBusCard.jsx
@@ -129,6 +132,7 @@ bustracknow/
 │  │  └─ UserRow.jsx
 │  ├─ common/
 │  │  ├─ Button.jsx
+│  │  ├─ CustomTabBar.jsx
 │  │  ├─ EmptyState.jsx
 │  │  ├─ ErrorBanner.jsx
 │  │  ├─ Input.jsx
@@ -164,13 +168,12 @@ bustracknow/
 │  │  └─ versionSync.js
 │  └─ trust/
 │     └─ crowdValidation.js
-├─ node_modules/  (omitted contents)
-├─ package-lock.json
-├─ package.json
-├─ README.md
 ├─ rules/
 │  ├─ firestore.rules
 │  └─ realtime.rules
+├─ package.json
+├─ package-lock.json
+├─ README.md
 ├─ screens/
 │  ├─ admin/
 │  │  ├─ AdminDashboard.jsx
@@ -180,7 +183,8 @@ bustracknow/
 │  │  └─ UserManagement.jsx
 │  ├─ auth/
 │  │  ├─ LoginScreen.jsx
-│  │  └─ OTPScreen.jsx
+│  │  ├─ OTPScreen.jsx
+│  │  └─ RegisterScreen.jsx
 │  ├─ shared/
 │  │  ├─ ProfileScreen.jsx
 │  │  └─ SettingsScreen.jsx
@@ -265,13 +269,13 @@ Install dependencies
 npm install
 
 Environment Setup
-Create a .env file in the root directory (refer to config/env.js):
 
-EXPO_PUBLIC_FIREBASE_API_KEY=your_key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+1. Copy `.env.example` to `.env` in the project root.
+2. Fill in all Firebase keys (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID, measurement ID).
+3. Add your Google Maps API key to both `GOOGLE_MAPS_API_KEY` (used by native build config) and `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (exposed to the client for MapView).
+4. Optionally adjust `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ENABLE_GOD_MODE`, and `EXPO_PUBLIC_ENABLE_ANALYTICS` flags to match your deployment.
 
-# ... other firebase config keys
+The Expo config (`app.config.js`) automatically injects the Google Maps key into Android and iOS native configs, and `config/env.js` reads the public variables at runtime.
 
 Run the App
 

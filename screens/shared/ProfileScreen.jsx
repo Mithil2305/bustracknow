@@ -1,15 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-	SafeAreaView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from "react-native";
-import { palette, radius, shadow, spacing } from "../../app/design/tokens";
-
-const MenuItem = ({ icon, label }) => (
-	<TouchableOpacity style={styles.menuItem}>
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
+import { useAuthStore } from "../../store/authStore";
+/* ---------------------------------- */
+/* Menu Item Component */
+/* ---------------------------------- */
+const MenuItem = ({ icon, label, onPress }) => (
+	<TouchableOpacity style={styles.menuItem} onPress={onPress}>
 		<Ionicons name={icon} size={20} color={palette.primary} />
 		<Text style={styles.menuText}>{label}</Text>
 		<Ionicons name="chevron-forward" size={18} color={palette.subtext} />
@@ -17,29 +16,85 @@ const MenuItem = ({ icon, label }) => (
 );
 
 export default function ProfileScreen() {
-	const trustScore = 85;
+	const navigation = useNavigation();
+	const { user, logout } = useAuthStore();
+
+	// Fallbacks to avoid crashes
+	const name = user?.name || "User";
+	const initials =
+		name
+			.split(" ")
+			.map((n) => n[0])
+			.join("")
+			.slice(0, 2)
+			.toUpperCase() || "U";
+
+	const trustScore = user?.trustScore ?? 85;
+
+	/* ---------------------------------- */
+	/* Logout Handler */
+	/* ---------------------------------- */
+	const handleLogout = () => {
+		Alert.alert("Log out", "Are you sure you want to log out?", [
+			{ text: "Cancel", style: "cancel" },
+			{
+				text: "Log Out",
+				style: "destructive",
+				onPress: () => {
+					logout();
+					navigation.dispatch(
+						CommonActions.reset({
+							index: 0,
+							routes: [{ name: "Auth" }],
+						}),
+					);
+				},
+			},
+		]);
+	};
+
 	return (
 		<SafeAreaView style={styles.safe}>
 			<View style={styles.container}>
+				{/* ---------------- Header ---------------- */}
 				<View style={styles.headerCard}>
 					<View style={styles.avatar}>
-						<Text style={styles.avatarText}>JD</Text>
+						<Text style={styles.avatarText}>{initials}</Text>
 					</View>
-					<Text style={styles.name}>John Doe</Text>
+					<Text style={styles.name}>{name}</Text>
 					<Text style={styles.role}>Trust Score: {trustScore}/100</Text>
+
 					<View style={styles.progressTrack}>
 						<View style={[styles.progressFill, { width: `${trustScore}%` }]} />
 					</View>
 				</View>
 
+				{/* ---------------- Menu ---------------- */}
 				<View style={styles.menuCard}>
-					<MenuItem icon="person-outline" label="Edit Profile" />
-					<MenuItem icon="bus-outline" label="My Trips" />
-					<MenuItem icon="settings-outline" label="Settings" />
-					<MenuItem icon="help-circle-outline" label="Help & Support" />
+					<MenuItem
+						icon="person-outline"
+						label="Edit Profile"
+						onPress={() => navigation.navigate("EditProfile")}
+					/>
+					<MenuItem
+						icon="bus-outline"
+						label="My Trips"
+						onPress={() => navigation.navigate("MyTrips")}
+					/>
+					<MenuItem
+						icon="settings-outline"
+						label="Settings"
+						onPress={() => navigation.navigate("Settings")}
+					/>
+					<MenuItem
+						icon="help-circle-outline"
+						label="Help & Support"
+						onPress={() => navigation.navigate("Support")}
+					/>
 				</View>
 
-				<TouchableOpacity style={styles.logoutBtn}>
+				{/* ---------------- Logout ---------------- */}
+				<TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
 					<Ionicons name="log-out-outline" size={18} color="#fff" />
 					<Text style={styles.logoutText}>Log Out</Text>
 				</TouchableOpacity>
@@ -48,6 +103,9 @@ export default function ProfileScreen() {
 	);
 }
 
+/* ---------------------------------- */
+/* Styles (UNCHANGED) */
+/* ---------------------------------- */
 const styles = StyleSheet.create({
 	safe: { flex: 1, backgroundColor: palette.surface },
 	container: { flex: 1, padding: spacing.lg, gap: spacing.md },

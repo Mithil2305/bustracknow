@@ -1,14 +1,14 @@
 import { useState } from "react";
 import {
 	FlatList,
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../../app/design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const seedRoutes = [
 	{ id: "1", name: "Route A", distance: "12.4 km", active: true },
@@ -22,12 +22,12 @@ export default function RouteManagement() {
 
 	const toggle = (id) => {
 		setRoutes((prev) =>
-			prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r))
+			prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
 		);
 	};
 
 	const filtered = routes.filter((r) =>
-		r.name.toLowerCase().includes(search.toLowerCase())
+		r.name.toLowerCase().includes(search.toLowerCase()),
 	);
 
 	return (

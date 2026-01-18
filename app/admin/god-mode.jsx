@@ -1,5 +1,6 @@
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 export default function GodModeMap() {
 	return (

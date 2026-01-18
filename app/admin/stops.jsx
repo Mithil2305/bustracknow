@@ -1,14 +1,14 @@
 import { useState } from "react";
 import {
 	FlatList,
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { palette, radius, shadow, spacing } from "../design/tokens";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { palette, radius, shadow, spacing } from "../../design/tokens";
 
 const seedStops = [
 	{ id: "s1", name: "Central Bus Stand", area: "Downtown", active: true },
@@ -22,12 +22,12 @@ export default function StopManagement() {
 
 	const toggle = (id) => {
 		setStops((prev) =>
-			prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
+			prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s)),
 		);
 	};
 
 	const filtered = stops.filter((s) =>
-		`${s.name} ${s.area}`.toLowerCase().includes(search.toLowerCase())
+		`${s.name} ${s.area}`.toLowerCase().includes(search.toLowerCase()),
 	);
 
 	return (

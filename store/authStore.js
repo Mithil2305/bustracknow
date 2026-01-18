@@ -4,7 +4,7 @@ import { create } from "zustand";
  * store/authStore.js
  * Manages user authentication state and role.
  */
-const useAuthStore = create((set) => ({
+export const useAuthStore = create((set) => ({
 	user: null,
 	userProfile: null, // Additional data from Firestore (role, name, etc.)
 	isLoading: true,
@@ -23,9 +23,8 @@ const useAuthStore = create((set) => ({
 	logout: () =>
 		set({
 			user: null,
-			userProfile: null,
-			isAuthenticated: false,
-			error: null,
+			role: null,
+			token: null,
 		}),
 }));
 
