@@ -1,7 +1,11 @@
 export const palette = {
-	primary: "#0A84FF",
-	primaryDark: "#0060DF",
-	secondary: "#10B981",
+	primary: "#0D9488", // Teal (PDF spec - brand color)
+	primaryDark: "#0F766E",
+	secondary: "#2563EB", // Blue (PDF spec - actions)
+	success: "#10B981", // Green (positive states)
+	warning: "#F59E0B", // Amber (alerts/caution)
+	danger: "#EF4444", // Red (errors/critical)
+	offline: "#64748B", // Gray (offline state)
 	surface: "#F4F7FB",
 	card: "#FFFFFF",
 	border: "#E5E7EB",

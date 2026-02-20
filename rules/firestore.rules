@@ -1,62 +1,68 @@
+// rules/firestore.rules
 rules_version = '2';
-
 service cloud.firestore {
-match /databases/{database}/documents {
-
-// Helper function to check if user is authenticated
-function isAuthenticated() {
-  return request.auth != null;
-}
-
-// Helper function to check if user is admin
-// This assumes a custom claim 'admin' is set on the token OR 
-// there is a field 'role' in the user document (fetching user doc in rules costs a read operation)
-// For simplicity/cost, we often rely on user ID match or custom claims.
-// Here we check the user document for a 'role' field.
-function isAdmin() {
-  return isAuthenticated() && 
-    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-}
-
-// --- Users Collection ---
-match /users/{userId} {
-  // Users can read and write their own profile
-  allow read, write: if isAuthenticated() && request.auth.uid == userId;
-  // Admins can read/write any user
-  allow read, write: if isAdmin();
-}
-
-// --- Routes Collection ---
-match /routes/{routeId} {
-  // Publicly readable
-  allow read: if true;
-  // Only admins can modify routes
-  allow create, update, delete: if isAdmin();
-}
-
-// --- Stops Collection ---
-match /stops/{stopId} {
-  // Publicly readable
-  allow read: if true;
-  // Only admins can modify stops
-  allow create, update, delete: if isAdmin();
-}
-
-// --- Contributions / Reports ---
-match /contributions/{contributionId} {
-  // Authenticated users can create contributions (e.g., "Bus is full")
-  allow create: if isAuthenticated();
-  // Users can only read their own contributions or if admin
-  allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-  // No updates allowed after creation (append-only log)
-  allow update: if false;
-}
-
-// --- Default Deny ---
-match /{document=**} {
-  allow read, write: if false;
-}
-
-
-}
+  match /databases/{database}/documents {
+    
+    // ✅ USERS: Public read (trust system), self-write only + anti-ban bypass
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // 🔒 CRITICAL: Prevent banned users from modifying their ban status
+      allow update: if request.auth.uid == userId 
+        && (!request.resource.data.keys().hasAny(['isBanned']) 
+            || request.resource.data.isBanned == resource.data.isBanned)
+        && !resource.data.isBanned; // Banned users cannot update ANY field
+    }
+    
+    // ✅ ROUTES: Public read, admin write only
+    match /routes/{routeId} {
+      allow read: if true;
+      allow write: if request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // ✅ ALERTS: Public read, authenticated create with validation
+    match /alerts/{alertId} {
+      allow read: if true;
+      
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['routeId', 'type', 'contributorId', 'location', 'timestamp'])
+        && ['full', 'late', 'not-running'].hasAny([request.resource.data.type])
+        && request.resource.data.location.lat is number
+        && request.resource.data.location.lng is number
+        && request.resource.data.contributorId == request.auth.uid
+        && request.resource.data.timestamp > (request.time - duration.value(5, 'minutes')) // Prevent timestamp spoofing
+        && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBanned;
+      
+      // Only allow upvotes (prevent downvote attacks)
+      allow update: if request.auth != null
+        && request.resource.data.upvotes > resource.data.upvotes;
+    }
+    
+    // ✅ POINTS TRANSACTIONS: Immutable ledger (critical for audit)
+    match /points_transactions/{transactionId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // 🔒 Immutable - no modifications allowed
+    }
+    
+    // ✅ REDEMPTIONS: User owns requests, admin updates status
+    match /redemptions/{requestId} {
+      allow read: if request.auth != null 
+        && (request.auth.uid == resource.data.userId 
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.pointsUsed >= 10000 // Minimum 10,000 points (₹100)
+        && request.resource.data.amount >= 100
+        && resource == null; // Prevent duplicate submissions
+      
+      // Only admin can update status
+      allow update: if request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && request.resource.data.status in ['pending', 'processing', 'completed', 'failed'];
+    }
+  }
 }

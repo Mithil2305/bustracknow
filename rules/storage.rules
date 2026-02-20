@@ -1,0 +1,52 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Helper functions ───
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+
+    function isImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // ─── Profile Pictures ───
+    match /profiles/{userId}/{fileName} {
+      allow read: if isAuth();
+      allow write: if isAuth() && isOwner(userId) && isImageType() && isUnder5MB();
+      allow delete: if isAuth() && (isOwner(userId) || isAdmin());
+    }
+
+    // ─── Route Images ───
+    match /routes/{routeId}/{fileName} {
+      allow read: if true; // Public
+      allow write: if isAuth() && isAdmin() && isImageType() && isUnder5MB();
+      allow delete: if isAuth() && isAdmin();
+    }
+
+    // ─── Alert Photos ───
+    match /alerts/{alertId}/{fileName} {
+      allow read: if isAuth();
+      allow write: if isAuth() && isImageType() && isUnder5MB();
+      allow delete: if isAuth() && isAdmin();
+    }
+
+    // ─── Default deny ───
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

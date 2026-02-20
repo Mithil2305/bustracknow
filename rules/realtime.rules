@@ -1,37 +1,41 @@
+// rules/realtime.rules
 {
-"rules": {
-// Public read access for bus locations allows the map to update for everyone
-"buses": {
-".read": true,
-
-  // Wildcard for individual bus IDs
-  "$busId": {
-    // Write access:
-    // 1. User must be authenticated
-    // 2. Ideally, we should check if the user is authorized to drive this bus.
-    //    For this MVP, we allow any authenticated user to write to a bus node
-    //    if they claim to be broadcasting.
-    ".write": "auth != null",
-    
-    // Validation: Data must have a timestamp and coordinates
-    ".validate": "newData.hasChildren(['lat', 'lng', 'timestamp']) && newData.child('timestamp').isNumber()"
+  "rules": {
+    "active_buses": {
+      "$routeId": {
+        "$sessionId": {
+          // 🔒 CRITICAL: Only session owner or admin can write
+          ".write": "auth != null && (
+            (data.exists() && data.child('contributor_id').val() == auth.uid) ||
+            (!data.exists() && newData.child('contributor_id').val() == auth.uid) ||
+            root.child('admins').child(auth.uid).exists()
+          )",
+          
+          ".read": "true",
+          
+          // 🔒 CRITICAL: TTL enforcement + spoofing prevention
+          ".validate": "
+            newData.hasChildren(['lat', 'lng', 'timestamp', 'contributor_id', 'speed']) &&
+            newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 &&
+            newData.child('lng').val() >= -180 && newData.child('lng').val() <= 180 &&
+            newData.child('speed').val() >= 0 && newData.child('speed').val() <= 120 && // Realistic bus speed
+            newData.child('timestamp').val() > (now - 300000) && // 5-min TTL
+            newData.child('timestamp').val() <= (now + 60000) && // Prevent future timestamps
+            !root.child('users').child(newData.child('contributor_id').val()).child('isBanned').val()
+          "
+        }
+      }
+    },
+    "admins": {
+      ".read": "root.child('admins').child(auth.uid).exists()",
+      ".write": "false" // Only set via Firebase Console
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.child('trustScore').val() >= 0 && newData.child('trustScore').val() <= 100"
+      }
+    }
   }
-},
-
-// User specific location data (if tracking specific users separate from buses)
-"users": {
-  "$userId": {
-    ".read": "$userId === auth.uid",
-    ".write": "$userId === auth.uid"
-  }
-},
-
-// Administrative logs or server status
-"admin_logs": {
-  ".read": false,
-  ".write": false 
-}
-
-
-}
 }
