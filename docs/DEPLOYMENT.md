@@ -7,13 +7,12 @@
 - EAS CLI (`npm install -g eas-cli`)
 - Firebase CLI (`npm install -g firebase-tools`)
 - Firebase project with Auth, Firestore, Realtime DB, and Storage enabled
-- Google Maps API key (Android + iOS)
 - Cloudflare R2 bucket (optional, for zero-egress storage)
 
 ## Environment Setup
 
 1. Copy `.env.development` → `.env.local`
-2. Fill in all Firebase and Maps API keys
+2. Fill in all Firebase API keys
 3. Configure R2 credentials if using Cloudflare storage
 
 ## Development

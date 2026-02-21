@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Loader from "../../../components/common/Loader";
-import { colors, palette, shadow, spacing } from "../../../design/tokens";
+import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
 import { useAuth } from "../../../hooks/useAuth";
 import { firestore } from "../../../services/firebase/firebaseConfig";
 
@@ -152,13 +152,13 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
     padding: spacing.lg,
-    borderRadius: 16,
+    borderRadius: radius.full,
     ...shadow.card,
   },
   yourRankIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.full,
     backgroundColor: "#CCFBF1",
     justifyContent: "center",
     alignItems: "center",
@@ -189,12 +189,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDFA",
     marginHorizontal: -spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: 14,
+    borderRadius: radius.full,
   },
   rankBadge: {
     width: 30,
     height: 30,
-    borderRadius: 10,
+    borderRadius: radius.full,
     backgroundColor: palette.surface,
     justifyContent: "center",
     alignItems: "center",

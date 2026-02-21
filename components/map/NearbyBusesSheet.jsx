@@ -1,12 +1,40 @@
 import { Ionicons } from "@expo/vector-icons";
-import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { useMemo, useRef } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { colors, palette, shadow, spacing } from "../../design/tokens";
+import { useRef } from "react";
+import { Animated, Dimensions, FlatList, PanResponder, StyleSheet, Text, View } from "react-native";
+import { colors, palette, radius, shadow, spacing } from "../../design/tokens";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const SNAP_LOW = SCREEN_HEIGHT * 0.3;
+const SNAP_HIGH = SCREEN_HEIGHT * 0.65;
 
 export default function NearbyBusesSheet() {
-  const bottomSheetRef = useRef(null);
-  const snapPoints = useMemo(() => ["30%", "65%"], []);
+  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT - SNAP_LOW)).current;
+  const lastSnap = useRef(SCREEN_HEIGHT - SNAP_LOW);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
+      onPanResponderMove: (_, g) => {
+        const newY = lastSnap.current + g.dy;
+        const clamped = Math.max(
+          SCREEN_HEIGHT - SNAP_HIGH,
+          Math.min(SCREEN_HEIGHT - SNAP_LOW, newY)
+        );
+        translateY.setValue(clamped);
+      },
+      onPanResponderRelease: (_, g) => {
+        const current = lastSnap.current + g.dy;
+        const mid = SCREEN_HEIGHT - (SNAP_LOW + SNAP_HIGH) / 2;
+        const snapTo = current < mid ? SCREEN_HEIGHT - SNAP_HIGH : SCREEN_HEIGHT - SNAP_LOW;
+        lastSnap.current = snapTo;
+        Animated.spring(translateY, {
+          toValue: snapTo,
+          useNativeDriver: true,
+          friction: 8,
+        }).start();
+      },
+    })
+  ).current;
 
   const buses = [
     {
@@ -41,16 +69,44 @@ export default function NearbyBusesSheet() {
     },
   ];
 
+  const renderBus = ({ item: bus }) => (
+    <View style={styles.card}>
+      <View style={[styles.routeCircle, { backgroundColor: bus.color }]}>
+        <Text style={styles.routeText}>{bus.route}</Text>
+      </View>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>
+          {bus.origin} → {bus.destination}
+        </Text>
+        <View style={styles.distanceRow}>
+          <Ionicons name="navigate-outline" size={12} color={colors.gray400} />
+          <Text style={styles.distanceText}>{bus.distance} away</Text>
+        </View>
+      </View>
+      <View style={styles.etaContainer}>
+        <Text
+          style={[
+            styles.etaText,
+            { color: bus.status === "LATE" ? palette.warning : palette.primary },
+          ]}
+        >
+          {bus.eta}
+        </Text>
+        <Text style={[styles.statusText, { color: bus.color }]}>{bus.status}</Text>
+      </View>
+    </View>
+  );
+
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enablePanDownToClose={false}
-      style={styles.sheetContainer}
-      handleIndicatorStyle={styles.handleIndicator}
-      backgroundStyle={styles.sheetBackground}
+    <Animated.View
+      style={[styles.sheetContainer, { transform: [{ translateY }], height: SNAP_HIGH + 40 }]}
     >
+      {/* Drag Handle */}
+      <View {...panResponder.panHandlers} style={styles.handleArea}>
+        <View style={styles.handleIndicator} />
+      </View>
+
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerIcon}>
@@ -63,59 +119,40 @@ export default function NearbyBusesSheet() {
         </View>
       </View>
 
-      <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
-        {buses.map((bus) => (
-          <View key={bus.id} style={styles.card}>
-            <View style={[styles.routeCircle, { backgroundColor: bus.color }]}>
-              <Text style={styles.routeText}>{bus.route}</Text>
-            </View>
-
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>
-                {bus.origin} → {bus.destination}
-              </Text>
-              <View style={styles.distanceRow}>
-                <Ionicons name="navigate-outline" size={12} color={colors.gray400} />
-                <Text style={styles.distanceText}>{bus.distance} away</Text>
-              </View>
-            </View>
-
-            <View style={styles.etaContainer}>
-              <Text
-                style={[
-                  styles.etaText,
-                  { color: bus.status === "LATE" ? palette.warning : palette.primary },
-                ]}
-              >
-                {bus.eta}
-              </Text>
-              <Text style={[styles.statusText, { color: bus.color }]}>{bus.status}</Text>
-            </View>
-          </View>
-        ))}
-
-        {/* Extra padding at bottom for FAB clearance */}
-        <View style={{ height: 80 }} />
-      </BottomSheetScrollView>
-    </BottomSheet>
+      {/* Bus List */}
+      <FlatList
+        data={buses}
+        keyExtractor={(item) => item.id}
+        renderItem={renderBus}
+        contentContainerStyle={styles.scrollContent}
+        ListFooterComponent={<View style={{ height: 80 }} />}
+        showsVerticalScrollIndicator={false}
+      />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   sheetContainer: {
-    ...shadow.elevated,
-  },
-  sheetBackground: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: SNAP_HIGH + 40,
     backgroundColor: palette.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    ...shadow.elevated,
+  },
+  handleArea: {
+    alignItems: "center",
+    paddingVertical: spacing.sm,
   },
   handleIndicator: {
     backgroundColor: colors.gray300,
     width: 40,
     height: 4,
     borderRadius: 2,
-    marginTop: spacing.sm,
   },
   header: {
     flexDirection: "row",
@@ -162,7 +199,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: palette.card,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
@@ -172,7 +209,7 @@ const styles = StyleSheet.create({
   routeCircle: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.full,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,

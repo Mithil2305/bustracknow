@@ -114,7 +114,7 @@ const s = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     backgroundColor: palette.card,
     alignItems: "center",
     justifyContent: "center",
@@ -125,7 +125,7 @@ const s = StyleSheet.create({
   iconBg: {
     width: 72,
     height: 72,
-    borderRadius: 20,
+    borderRadius: radius.xxl,
     backgroundColor: palette.primaryLight,
     alignItems: "center",
     justifyContent: "center",
@@ -155,7 +155,7 @@ const s = StyleSheet.create({
   verifyBtn: {
     width: "100%",
     height: 52,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: palette.primary,
     alignItems: "center",
     justifyContent: "center",

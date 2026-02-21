@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmptyState from "../../../components/common/EmptyState";
 import Loader from "../../../components/common/Loader";
-import { colors, palette, shadow, spacing } from "../../../design/tokens";
+import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
 import { FirestoreService } from "../../../services/firebase/firestoreService";
 
 export default function RouteDetail() {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   routeBadge: {
     width: 64,
     height: 64,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: palette.primary,
     justifyContent: "center",
     alignItems: "center",
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.success,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
     marginRight: spacing.sm,
   },
   onTimeText: {
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     marginLeft: -24,
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: palette.card,
     justifyContent: "center",
     alignItems: "center",
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.card,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radius.full,
     ...shadow.card,
   },
   viewMapText: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.card,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: "#DBEAFE",
   },
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFBEB",
     borderWidth: 1,
     borderColor: "#FEF3C7",
-    borderRadius: 20,
+    borderRadius: radius.full,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginTop: spacing.md,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FDE68A",
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: radius.full,
   },
   pointsBadgeText: {
     color: "#B45309",
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.card,
     borderWidth: 1,
     borderColor: colors.gray200,
-    borderRadius: 16,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     alignItems: "flex-start",
     ...shadow.card,

@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { palette, radius, shadow, spacing } from "../../design/tokens";
@@ -104,7 +104,7 @@ const s = StyleSheet.create({
   logoBg: {
     width: 88,
     height: 88,
-    borderRadius: 24,
+    borderRadius: radius.xxl,
     backgroundColor: palette.primaryLight,
     alignItems: "center",
     justifyContent: "center",
@@ -125,7 +125,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: palette.border,
     overflow: "hidden",
@@ -152,7 +152,7 @@ const s = StyleSheet.create({
   sendBtn: {
     flexDirection: "row",
     backgroundColor: palette.primary,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     height: 52,
     alignItems: "center",
     justifyContent: "center",

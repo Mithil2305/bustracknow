@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Platform,
@@ -18,7 +19,7 @@ import { colors, palette, shadow, spacing } from "../../design/tokens";
 let LiveMap;
 try {
   LiveMap = require("../../components/map/LiveMap").default;
-} catch (e) {
+} catch (_e) {
   LiveMap = null;
 }
 
@@ -30,14 +31,14 @@ function MapPlaceholder() {
       </View>
       <Text style={styles.placeholderTitle}>Map View</Text>
       <Text style={styles.placeholderBody}>
-        react-native-maps requires a native dev client.{"\n"}
-        Run "npx expo run:android" or "npx expo run:ios".
+        {"OpenStreetMap is loading.\nEnsure you have an internet connection."}
       </Text>
     </View>
   );
 }
 
 export default function TabsHome() {
+  const router = useRouter();
   const [isSidebarVisible, setSidebarVisible] = useState(false);
 
   return (
@@ -97,11 +98,15 @@ export default function TabsHome() {
 
       {/* Floating "I'm on a bus" Button */}
       <View style={styles.floatingActionContainer} pointerEvents="box-none">
-        <TouchableOpacity style={styles.imOnABusButton} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.imOnABusButton}
+          activeOpacity={0.85}
+          onPress={() => router.push("/modals/im-on-bus")}
+        >
           <View style={styles.busBtnIcon}>
             <Ionicons name="bus" size={20} color="#FFFFFF" />
           </View>
-          <Text style={styles.imOnABusText}>I'm on a bus</Text>
+          <Text style={styles.imOnABusText}>{"I'm on a bus"}</Text>
           <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
       </View>

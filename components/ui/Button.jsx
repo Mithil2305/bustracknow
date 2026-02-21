@@ -85,18 +85,23 @@ const Button = ({
     backgroundColor: disabled ? colors.gray200 : variantStyle.bg,
     height: sizeStyle.height,
     paddingHorizontal: sizeStyle.paddingHorizontal,
-    borderRadius: 12,
+    borderRadius: 9999,
     borderWidth: variant === 'outline' ? 1 : 0,
     borderColor: disabled ? colors.gray200 : variantStyle.border,
     justifyContent: 'center',
     alignItems: 'center',
     opacity: disabled ? 0.6 : 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   };
 
   const textStyle = {
     color: disabled ? colors.gray400 : variantStyle.text,
     fontSize: sizeStyle.fontSize,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   };
 

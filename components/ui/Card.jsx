@@ -21,9 +21,9 @@ export default function Card({ children, title, style }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.card,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
-    ...shadow,
+    ...shadow.card,
   },
   title: {
     fontSize: 16,

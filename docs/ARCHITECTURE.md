@@ -13,7 +13,7 @@ BusTrackNow is a crowd-sourced, real-time bus tracking app built with **Expo SDK
 | State         | Zustand v5                                  |
 | Backend       | Firebase (Auth, Firestore, Realtime DB)     |
 | Storage       | Cloudflare R2 (primary) + Firebase fallback |
-| Maps          | react-native-maps (Google Maps)             |
+| Maps          | OpenStreetMap (Leaflet via WebView)         |
 | Design System | Custom tokens (palette, radius, spacing)    |
 
 ## Directory Structure

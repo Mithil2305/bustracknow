@@ -272,10 +272,9 @@ Environment Setup
 
 1. Copy `.env.example` to `.env` in the project root.
 2. Fill in all Firebase keys (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID, measurement ID).
-3. Add your Google Maps API key to both `GOOGLE_MAPS_API_KEY` (used by native build config) and `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (exposed to the client for MapView).
-4. Optionally adjust `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ENABLE_GOD_MODE`, and `EXPO_PUBLIC_ENABLE_ANALYTICS` flags to match your deployment.
+3. Optionally adjust `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ENABLE_GOD_MODE`, and `EXPO_PUBLIC_ENABLE_ANALYTICS` flags to match your deployment.
 
-The Expo config (`app.config.js`) automatically injects the Google Maps key into Android and iOS native configs, and `config/env.js` reads the public variables at runtime.
+Maps use **OpenStreetMap** (via Leaflet in a WebView) — no API key required.
 
 Run the App
 

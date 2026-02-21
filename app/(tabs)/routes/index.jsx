@@ -5,7 +5,7 @@ import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmptyState from "../../../components/common/EmptyState";
 import Loader from "../../../components/common/Loader";
-import { colors, palette, shadow, spacing } from "../../../design/tokens";
+import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
 import { FirestoreService } from "../../../services/firebase/firestoreService";
 
 const ROUTE_COLORS = [
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: palette.surface,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 46,
+    borderRadius: radius.full,
+    paddingHorizontal: 16,
+    height: 52,
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.gray900,
   },
   list: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: palette.card,
-    borderRadius: 16,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     marginBottom: spacing.sm,
     borderWidth: 1,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   routeBadge: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: radius.full,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,

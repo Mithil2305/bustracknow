@@ -1,12 +1,12 @@
 export const palette = {
-  primary: "#0D9488",
-  primaryDark: "#0F766E",
-  primaryLight: "#CCFBF1",
+  primary: "#0b7a9d",
+  primaryDark: "#085a75",
+  primaryLight: "#e0f2f7",
   secondary: "#2563EB",
   secondaryLight: "#DBEAFE",
   success: "#10B981",
   successLight: "#ECFDF5",
-  warning: "#F59E0B",
+  warning: "#f59e0b",
   warningLight: "#FFFBEB",
   warningBorder: "#FEF3C7",
   warningDark: "#D97706",
@@ -29,10 +29,10 @@ export const palette = {
 export const radius = {
   xs: 8,
   sm: 12,
-  md: 14,
-  lg: 16,
-  xl: 20,
-  xxl: 28,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 32,
   full: 9999,
 };
 

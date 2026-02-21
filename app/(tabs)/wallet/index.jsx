@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, palette, shadow, spacing } from "../../../design/tokens";
+import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
 
 export default function WalletScreen() {
   const [activeTab, setActiveTab] = useState("history");
@@ -280,14 +280,14 @@ const styles = StyleSheet.create({
   tabWrapper: {
     flexDirection: "row",
     backgroundColor: palette.surface,
-    borderRadius: 14,
-    padding: 4,
+    borderRadius: radius.full,
+    padding: 6,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 12,
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: radius.full,
   },
   tabButtonActive: {
     backgroundColor: palette.card,
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   },
   requestButton: {
     backgroundColor: palette.primary,
-    borderRadius: 14,
+    borderRadius: radius.full,
     paddingVertical: 16,
     alignItems: "center",
   },

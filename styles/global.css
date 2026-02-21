@@ -1,27 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* BusTrackNow — Global Styles */
-/* Used for web build via Expo Web */
+/* BusTrackNow — Global Styles (Web only) */
 @import "~leaflet/dist/leaflet.css";
 
 :root {
-  --color-primary: #0d9488;
+  --color-primary: #0b7a9d;
   --color-secondary: #2563eb;
   --color-background: #f8fafc;
   --color-card: #ffffff;
   --color-text: #1e293b;
   --color-muted: #94a3b8;
   --color-border: #e2e8f0;
-  --color-success: #16a34a;
+  --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;

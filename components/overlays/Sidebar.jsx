@@ -2,17 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
-  Animated,
-  Dimensions,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Animated,
+    Dimensions,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, palette, shadow, spacing } from "../../design/tokens";
+import { colors, palette, radius, shadow, spacing } from "../../design/tokens";
 
 const { width } = Dimensions.get("window");
 const SIDEBAR_WIDTH = width * 0.78;
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.warningLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: palette.warningBorder,
     gap: 4,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.successLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: "#D1FAE5",
     gap: 4,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   menuIconWrap: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: radius.full,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,

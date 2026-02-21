@@ -1,19 +1,8 @@
-import { Polyline } from "react-native-maps";
-
-export default function RoutePolyline({
-	coordinates = [],
-	color = "#2563EB",
-	width = 5,
-	dashed = false,
-	zIndex = 1,
-}) {
-	return (
-		<Polyline
-			coordinates={coordinates}
-			strokeColor={color}
-			strokeWidth={width}
-			lineDashPattern={dashed ? [8, 6] : undefined}
-			zIndex={zIndex}
-		/>
-	);
+/**
+ * RoutePolyline stub for native.
+ * Route rendering is handled inside the Leaflet WebView (LiveMap.jsx).
+ * This is a no-op placeholder so the app compiles cleanly.
+ */
+export default function RoutePolyline() {
+  return null;
 }
