@@ -1,7 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
-import Button from "../../components/common/Button";
-import { palette, spacing } from "../../design/tokens";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors, palette, spacing } from "../../design/tokens";
 
 export default function OnboardingSlide4() {
   const router = useRouter();
@@ -9,21 +10,31 @@ export default function OnboardingSlide4() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <View style={styles.iconWrap}>
-          <Text style={styles.icon}>🚨</Text>
+        <View style={styles.iconCircle}>
+          <Ionicons name="megaphone" size={64} color="#EF4444" />
         </View>
+
         <Text style={styles.title}>Community Alerts</Text>
         <Text style={styles.body}>
           Report delays, breakdowns, or safety concerns. Upvote real alerts and build your trust
           score in the community.
         </Text>
+
         <View style={styles.dots}>
           <View style={styles.dot} />
           <View style={styles.dot} />
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
         </View>
-        <Button title="Let's Go!" onPress={() => router.replace("/(auth)")} />
+
+        <TouchableOpacity
+          style={styles.btn}
+          activeOpacity={0.85}
+          onPress={() => router.replace("/(auth)")}
+        >
+          <Text style={styles.btnText}>{"Let's Go!"}</Text>
+          <Ionicons name="checkmark-circle" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -31,24 +42,44 @@ export default function OnboardingSlide4() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.background },
-  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.lg },
-  iconWrap: { marginBottom: spacing.lg },
-  icon: { fontSize: 64 },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 },
+  iconCircle: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 40,
+  },
   title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: palette.text,
+    fontSize: 26,
+    fontWeight: "800",
+    color: colors.gray900,
     textAlign: "center",
     marginBottom: spacing.sm,
   },
   body: {
-    fontSize: 14,
-    color: palette.muted,
+    fontSize: 15,
+    color: colors.gray500,
     textAlign: "center",
-    lineHeight: 21,
-    marginBottom: spacing.xl,
+    lineHeight: 23,
+    marginBottom: 32,
+    paddingHorizontal: 8,
   },
-  dots: { flexDirection: "row", gap: 8, marginBottom: spacing.lg },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.border },
+  dots: { flexDirection: "row", gap: 8, marginBottom: 32 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gray200 },
   dotActive: { backgroundColor: palette.primary, width: 24 },
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: palette.primary,
+    height: 56,
+    borderRadius: 16,
+    paddingHorizontal: 32,
+    gap: 10,
+    alignSelf: "stretch",
+  },
+  btnText: { color: "#fff", fontSize: 17, fontWeight: "700" },
 });

@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.966.0",
 		"@expo/vector-icons": "^15.0.3",
+		"@gorhom/bottom-sheet": "^5.2.8",
 		"@react-native-async-storage/async-storage": "^2.2.0",
 		"@react-native-community/netinfo": "^11.4.1",
 		"@react-navigation/bottom-tabs": "^7.4.0",
@@ -32,8 +33,11 @@
 		"expo-system-ui": "~6.0.9",
 		"expo-web-browser": "~15.0.10",
 		"firebase": "^12.8.0",
+		"leaflet": "^1.9.4",
+		"nativewind": "^4.2.0",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
+		"react-leaflet": "^5.0.0",
 		"react-native": "0.81.5",
 		"react-native-gesture-handler": "~2.28.0",
 		"react-native-get-random-values": "^2.0.0",
@@ -45,12 +49,14 @@
 		"react-native-url-polyfill": "^3.0.0",
 		"react-native-web": "~0.21.0",
 		"react-native-worklets": "0.5.1",
+		"tailwindcss": "^3.4.17",
 		"zustand": "^5.0.10"
 	},
 	"devDependencies": {
 		"dotenv": "^17.2.3",
 		"eslint": "^9.25.0",
-		"eslint-config-expo": "~10.0.0"
+		"eslint-config-expo": "~10.0.0",
+		"jscodeshift": "^0.15.2"
 	},
 	"private": true
 }

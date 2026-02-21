@@ -1,4 +1,9 @@
-import { Polyline } from "react-native-maps";
+let Polyline;
+try {
+	Polyline = require("react-native-maps").Polyline;
+} catch (e) {
+	Polyline = null;
+}
 
 export default function RoutePolyline({
 	coordinates = [],
@@ -7,6 +12,8 @@ export default function RoutePolyline({
 	dashed = false,
 	zIndex = 1,
 }) {
+	if (!Polyline) return null;
+
 	return (
 		<Polyline
 			coordinates={coordinates}

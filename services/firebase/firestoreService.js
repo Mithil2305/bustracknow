@@ -1,28 +1,25 @@
-import { 
-  collection, 
-  getDocs, 
-  getDoc, 
-  doc, 
-  query, 
-  where, 
-  addDoc, 
-  updateDoc, 
-  serverTimestamp 
-} from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "./firebaseConfig";
 
 /**
  * Handles interactions with static data (Routes, Stops, Config).
  * Optimized to reduce reads by checking versions.
  */
 export const FirestoreService = {
-  
   /**
    * Get global config to check data version
    */
   getConfig: async () => {
     try {
-      const configRef = doc(db, 'global', 'config');
+      const configRef = doc(db, "global", "config");
       const snapshot = await getDoc(configRef);
       return snapshot.exists() ? snapshot.data() : null;
     } catch (error) {
@@ -36,11 +33,33 @@ export const FirestoreService = {
    */
   getAllRoutes: async () => {
     try {
-      const routesCol = collection(db, 'routes');
+      const routesCol = collection(db, "routes");
       const snapshot = await getDocs(routesCol);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error("Error fetching routes:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Alias for getAllRoutes — used by routes/index.jsx
+   */
+  getRoutes: async () => {
+    return FirestoreService.getAllRoutes();
+  },
+
+  /**
+   * Fetch a single route by ID
+   */
+  getRouteById: async (id) => {
+    try {
+      const routeRef = doc(db, "routes", id);
+      const snapshot = await getDoc(routeRef);
+      if (!snapshot.exists()) return null;
+      return { id: snapshot.id, ...snapshot.data() };
+    } catch (error) {
+      console.error("Error fetching route by ID:", error);
       throw error;
     }
   },
@@ -50,9 +69,9 @@ export const FirestoreService = {
    */
   getAllStops: async () => {
     try {
-      const stopsCol = collection(db, 'stops');
+      const stopsCol = collection(db, "stops");
       const snapshot = await getDocs(stopsCol);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error("Error fetching stops:", error);
       throw error;
@@ -64,10 +83,10 @@ export const FirestoreService = {
    */
   addRoute: async (routeData) => {
     try {
-      const docRef = await addDoc(collection(db, 'routes'), {
+      const docRef = await addDoc(collection(db, "routes"), {
         ...routeData,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
       return docRef.id;
     } catch (error) {
@@ -81,14 +100,14 @@ export const FirestoreService = {
    */
   updateUserProfile: async (uid, data) => {
     try {
-      const userRef = doc(db, 'users', uid);
+      const userRef = doc(db, "users", uid);
       await updateDoc(userRef, {
         ...data,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error("Error updating profile:", error);
       throw error;
     }
-  }
+  },
 };

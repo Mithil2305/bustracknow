@@ -1,41 +1,57 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
-import { radius, spacing } from "../../design/tokens";
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '../../design/tokens';
 
-/**
- * "Offline mode" banner displayed when device loses connectivity.
- * Shows cached data timestamp if available.
- */
-export default function OfflineBanner({ lastSyncTime }) {
-	const syncLabel = lastSyncTime
-		? `Last synced: ${new Date(lastSyncTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`
-		: "Using cached data";
+const OfflineBanner = ({ 
+  isOffline, 
+  lastSyncTime, 
+  onRetrySync,
+  retrying = false
+}) => {
+  if (!isOffline) return null;
 
-	return (
-		<View style={styles.container}>
-			<Ionicons name="cloud-offline" size={16} color="#fff" />
-			<Text style={styles.text}>Offline Mode</Text>
-			<Text style={styles.sub}>{syncLabel}</Text>
-		</View>
-	);
-}
+  const formatLastSync = () => {
+    if (!lastSyncTime) return 'Never';
+    const diff = Date.now() - lastSyncTime;
+    const mins = Math.floor(diff / 60000);
+    
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min${mins > 1 ? 's' : ''} ago`;
+    const hours = Math.floor(mins / 60);
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  };
 
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: spacing.xs,
-		backgroundColor: "#64748B",
-		paddingHorizontal: spacing.md,
-		paddingVertical: spacing.xs,
-		borderRadius: radius.md,
-		alignSelf: "stretch",
-	},
-	text: { color: "#fff", fontSize: 13, fontWeight: "700" },
-	sub: {
-		color: "rgba(255,255,255,0.7)",
-		fontSize: 11,
-		fontWeight: "600",
-		marginLeft: "auto",
-	},
-});
+  return (
+    <View className="absolute top-4 left-0 right-0 px-4 z-50">
+      <View className="bg-yellow-50 rounded-xl p-4 border border-yellow-200 flex-row items-center">
+        {/* Icon */}
+        <View className="w-10 h-10 bg-yellow-100 rounded-full items-center justify-center mr-3">
+          <Ionicons name="cloud-offline" size={20} color={colors.warning} />
+        </View>
+
+        {/* Content */}
+        <View className="flex-1">
+          <Text className="font-bold text-gray-800">Offline Mode</Text>
+          <Text className="text-gray-600 text-sm mt-1">
+            Showing cached data. Last synced: {formatLastSync()}
+          </Text>
+        </View>
+
+        {/* Retry Button */}
+        <TouchableOpacity
+          onPress={onRetrySync}
+          disabled={retrying}
+          className="ml-3"
+        >
+          {retrying ? (
+            <ActivityIndicator size="small" color={colors.warning} />
+          ) : (
+            <Ionicons name="refresh" size={20} color={colors.warning} />
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default OfflineBanner;

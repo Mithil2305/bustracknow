@@ -1,134 +1,124 @@
-import { useCallback, useMemo, useRef } from "react";
-import {
-	Animated,
-	Dimensions,
-	PanResponder,
-	StyleSheet,
-	View,
-} from "react-native";
+import React, { useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Animated, TextInput } from 'react-native';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../design/tokens';
+import RouteCard from './RouteCard';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const COLLAPSED_HEIGHT = 180;
-const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.7;
+const BottomSheet = ({ 
+  routes = [], 
+  recentRoutes = [], 
+  onRouteSelect, 
+  searchTerm = '',
+  onSearchChange,
+  isExpanded = false,
+  onToggleExpand
+}) => {
+  const insets = useSafeAreaInsets();
+  const bottomSheetRef = useRef(null);
+  const snapPoints = ['30%', '85%'];
 
-/**
- * Reanimated-style bottom sheet with collapsed/expanded states.
- * Uses PanResponder for gesture handling without extra native deps.
- */
-export default function BottomSheet({ children, collapsed = true, onToggle }) {
-	const translateY = useRef(
-		new Animated.Value(collapsed ? 0 : -(EXPANDED_HEIGHT - COLLAPSED_HEIGHT)),
-	).current;
-	const lastGestureDy = useRef(0);
-	const isExpanded = useRef(!collapsed);
+  const handleSheetChanges = useCallback((index) => {
+    if (index === 0 && isExpanded) {
+      onToggleExpand?.(false);
+    } else if (index === 1 && !isExpanded) {
+      onToggleExpand?.(true);
+    }
+  }, [isExpanded, onToggleExpand]);
 
-	const panResponder = useMemo(
-		() =>
-			PanResponder.create({
-				onStartShouldSetPanResponder: () => true,
-				onMoveShouldSetPanResponder: (_, gestureState) =>
-					Math.abs(gestureState.dy) > 10,
-				onPanResponderGrant: () => {
-					translateY.extractOffset();
-				},
-				onPanResponderMove: (_, gestureState) => {
-					// Only allow vertical dragging within bounds
-					const newVal = Math.max(
-						-(EXPANDED_HEIGHT - COLLAPSED_HEIGHT),
-						Math.min(0, gestureState.dy),
-					);
-					translateY.setValue(newVal);
-					lastGestureDy.current = gestureState.dy;
-				},
-				onPanResponderRelease: () => {
-					translateY.flattenOffset();
-					// Snap to expanded or collapsed based on drag direction
-					const shouldExpand = lastGestureDy.current < -50;
-					const shouldCollapse = lastGestureDy.current > 50;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View className="flex-1 bg-white">
+        {/* Map Area */}
+        <View className="flex-1">
+          {/* Your Map component goes here */}
+        </View>
 
-					if (shouldExpand && !isExpanded.current) {
-						isExpanded.current = true;
-						Animated.spring(translateY, {
-							toValue: -(EXPANDED_HEIGHT - COLLAPSED_HEIGHT),
-							useNativeDriver: true,
-							bounciness: 4,
-						}).start();
-						onToggle?.(true);
-					} else if (shouldCollapse && isExpanded.current) {
-						isExpanded.current = false;
-						Animated.spring(translateY, {
-							toValue: 0,
-							useNativeDriver: true,
-							bounciness: 4,
-						}).start();
-						onToggle?.(false);
-					} else {
-						// Snap back to current state
-						Animated.spring(translateY, {
-							toValue: isExpanded.current
-								? -(EXPANDED_HEIGHT - COLLAPSED_HEIGHT)
-								: 0,
-							useNativeDriver: true,
-							bounciness: 4,
-						}).start();
-					}
-				},
-			}),
-		[translateY, onToggle],
-	);
+        {/* Bottom Sheet Handle */}
+        <View 
+          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg"
+          style={{ paddingBottom: insets.bottom }}
+        >
+          {/* Handle Bar */}
+          <View className="flex-row items-center justify-center py-3 border-t border-gray-200">
+            <View className="w-12 h-1 bg-gray-300 rounded-full" />
+          </View>
 
-	const toggle = useCallback(() => {
-		const toExpanded = !isExpanded.current;
-		isExpanded.current = toExpanded;
-		Animated.spring(translateY, {
-			toValue: toExpanded ? -(EXPANDED_HEIGHT - COLLAPSED_HEIGHT) : 0,
-			useNativeDriver: true,
-			bounciness: 4,
-		}).start();
-		onToggle?.(toExpanded);
-	}, [translateY, onToggle]);
+          {/* Search Bar */}
+          <View className="px-4 py-3">
+            <View className="flex-row items-center bg-gray-100 rounded-lg px-4 py-3">
+              <Ionicons name="search" size={20} color={colors.secondary} />
+              <TextInput
+                className="flex-1 ml-3 text-gray-800"
+                placeholder="Search route or destination..."
+                placeholderTextColor={colors.gray400}
+                value={searchTerm}
+                onChangeText={onSearchChange}
+              />
+              {searchTerm ? (
+                <TouchableOpacity onPress={() => onSearchChange('')}>
+                  <Ionicons name="close-circle" size={20} color={colors.gray400} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
 
-	return (
-		<Animated.View
-			style={[styles.container, { transform: [{ translateY }] }]}
-			{...panResponder.panHandlers}
-		>
-			<View style={styles.handleWrap} onTouchEnd={toggle}>
-				<View style={styles.handle} />
-			</View>
-			<View style={styles.content}>{children}</View>
-		</Animated.View>
-	);
-}
+          {/* Bottom Sheet Content */}
+          <BottomSheetScrollView 
+            className="px-4"
+            contentContainerStyle={{ paddingBottom: 20 }}
+          >
+            {/* Recent Routes Section */}
+            {recentRoutes.length > 0 && (
+              <View className="mb-6">
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-lg font-bold text-gray-800">Recent Routes</Text>
+                  <TouchableOpacity onPress={onToggleExpand}>
+                    <Text className="text-blue-600 font-medium">View All</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {recentRoutes.map((route) => (
+                    <RouteCard 
+                      key={route.id} 
+                      route={route} 
+                      onPress={() => onRouteSelect(route)}
+                      variant="compact"
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-const styles = StyleSheet.create({
-	container: {
-		position: "absolute",
-		bottom: 0,
-		left: 0,
-		right: 0,
-		height: EXPANDED_HEIGHT,
-		backgroundColor: "#fff",
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: -4 },
-		shadowOpacity: 0.1,
-		shadowRadius: 12,
-		elevation: 8,
-	},
-	handleWrap: {
-		alignItems: "center",
-		paddingVertical: 10,
-	},
-	handle: {
-		width: 40,
-		height: 4,
-		borderRadius: 2,
-		backgroundColor: "#D1D5DB",
-	},
-	content: {
-		flex: 1,
-		paddingHorizontal: 16,
-	},
-});
+            {/* All Routes Section */}
+            <View className="mb-4">
+              <Text className="text-lg font-bold text-gray-800 mb-3">
+                {searchTerm ? 'Search Results' : 'All Routes'}
+              </Text>
+              {routes.length === 0 ? (
+                <View className="py-12 items-center">
+                  <Ionicons name="bus-outline" size={48} color={colors.gray300} />
+                  <Text className="text-gray-500 mt-3">
+                    {searchTerm ? 'No routes found' : 'No routes available'}
+                  </Text>
+                </View>
+              ) : (
+                routes.map((route) => (
+                  <RouteCard 
+                    key={route.id} 
+                    route={route} 
+                    onPress={() => onRouteSelect(route)}
+                  />
+                ))
+              )}
+            </View>
+          </BottomSheetScrollView>
+        </View>
+      </View>
+    </GestureHandlerRootView>
+  );
+};
+
+export default BottomSheet;

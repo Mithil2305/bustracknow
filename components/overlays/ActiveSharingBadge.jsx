@@ -1,52 +1,98 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
-import { radius, spacing } from "../../design/tokens";
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { Animated, Text, TouchableOpacity, View } from 'react-native';
 
-/**
- * "Sharing Live Location" floating badge shown during active broadcast.
- */
-export default function ActiveSharingBadge({
-	routeNumber,
-	minutesActive = 0,
-	pointsEarned = 0,
-}) {
-	return (
-		<View style={styles.container}>
-			<View style={styles.dot} />
-			<Ionicons name="navigate" size={16} color="#fff" />
-			<View style={styles.content}>
-				<Text style={styles.label}>Sharing Live • {routeNumber}</Text>
-				<Text style={styles.meta}>
-					{minutesActive}m • +{pointsEarned} pts
-				</Text>
-			</View>
-		</View>
-	);
-}
+const ActiveSharingBadge = ({ 
+  tripMinutes = 0, 
+  pointsEarned = 0, 
+  onStopSharing, 
+  batteryLevel 
+}) => {
+  const [pulseAnim] = useState(new Animated.Value(1));
+  const [showBatteryWarning, setShowBatteryWarning] = useState(false);
 
-const styles = StyleSheet.create({
-	container: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: spacing.xs,
-		backgroundColor: "#0D9488",
-		paddingHorizontal: spacing.md,
-		paddingVertical: spacing.xs,
-		borderRadius: radius.xl,
-		alignSelf: "center",
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.2,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-	dot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: "#EF4444",
-	},
-	content: { marginLeft: 2 },
-	label: { color: "#fff", fontSize: 13, fontWeight: "700" },
-	meta: { color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: "600" },
-});
+  useEffect(() => {
+    // Pulse animation for the badge
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Show battery warning if low
+    if (batteryLevel && batteryLevel < 15) {
+      setShowBatteryWarning(true);
+    }
+
+    return () => {
+      pulseAnim.setValue(1);
+    };
+  }, []);
+
+  const pulseScale = {
+    transform: [{ scale: pulseAnim }],
+  };
+
+  return (
+    <View className="absolute top-4 left-0 right-0 px-4 z-50">
+      <View className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-4 shadow-lg">
+        {/* Header */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center">
+            <Animated.View style={pulseScale}>
+              <Ionicons name="location" size={20} color="white" />
+            </Animated.View>
+            <Text className="text-white font-bold ml-2">Sharing Live Location</Text>
+          </View>
+          <TouchableOpacity onPress={onStopSharing}>
+            <Ionicons name="close" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Stats Row */}
+        <View className="flex-row justify-between items-center mb-3">
+          <View className="items-center">
+            <Text className="text-white/80 text-xs">Trip Duration</Text>
+            <Text className="text-white font-bold text-lg">{tripMinutes} min</Text>
+          </View>
+          <View className="w-px h-8 bg-white/20" />
+          <View className="items-center">
+            <Text className="text-white/80 text-xs">Points Earned</Text>
+            <Text className="text-white font-bold text-lg">+{pointsEarned}</Text>
+          </View>
+        </View>
+
+        {/* Battery Warning */}
+        {showBatteryWarning && (
+          <View className="bg-teal-700/30 border border-teal-300 rounded-lg p-3 mb-2">
+            <View className="flex-row items-center">
+              <Ionicons name="battery-half" size={18} color="white" />
+              <Text className="text-white text-sm ml-2">
+                Low battery ({batteryLevel}%). Sharing will stop automatically to save power.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Stop Sharing Button */}
+        <TouchableOpacity
+          onPress={onStopSharing}
+          className="bg-white/20 backdrop-blur-sm rounded-lg py-3 items-center active:bg-white/30"
+        >
+          <Text className="text-white font-bold text-base">Stop Sharing</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default ActiveSharingBadge;

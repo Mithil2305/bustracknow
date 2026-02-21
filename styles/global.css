@@ -1,5 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* BusTrackNow — Global Styles */
 /* Used for web build via Expo Web */
+@import "~leaflet/dist/leaflet.css";
 
 :root {
   --color-primary: #0d9488;

@@ -1,10 +1,22 @@
 import { Platform, StyleSheet, View } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import env from "../../config/env";
 import { radius, shadow, spacing } from "../../design/tokens";
 import BusMarker from "./BusMarker";
 import RoutePolyline from "./RoutePolyline";
 import StopMarker from "./StopMarker";
+
+let MapView, Marker, PROVIDER_GOOGLE;
+try {
+	const Maps = require("react-native-maps");
+	MapView = Maps.default;
+	Marker = Maps.Marker;
+	PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
+} catch (e) {
+	MapView = null;
+	Marker = null;
+	PROVIDER_GOOGLE = null;
+}
+
 
 export default function LiveMap({
 	initialRegion = {
@@ -21,6 +33,8 @@ export default function LiveMap({
 	style,
 	children,
 }) {
+	if (!MapView) return null;
+
 	const provider =
 		Platform.OS === "android" || Platform.OS === "ios"
 			? PROVIDER_GOOGLE
