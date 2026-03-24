@@ -9,18 +9,10 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
-/**
- * Handles interactions with static data (Routes, Stops, Config).
- * Optimized to reduce reads by checking versions.
- */
 export const FirestoreService = {
-  /**
-   * Get global config to check data version
-   */
   getConfig: async () => {
     try {
-      const configRef = doc(db, "global", "config");
-      const snapshot = await getDoc(configRef);
+      const snapshot = await getDoc(doc(db, "global", "config"));
       return snapshot.exists() ? snapshot.data() : null;
     } catch (error) {
       console.error("Error fetching config:", error);
@@ -28,34 +20,28 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Fetch all routes (Heavy read operation - Should be cached locally)
-   */
   getAllRoutes: async () => {
     try {
-      const routesCol = collection(db, "routes");
-      const snapshot = await getDocs(routesCol);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      // Simple getDocs — no composite index needed.
+      // All seeded routes have isActive:true so no where() filter required.
+      // Sort client-side by bus number.
+      const snapshot = await getDocs(collection(db, "routes"));
+      const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      docs.sort((a, b) =>
+        String(a.number || "").localeCompare(String(b.number || ""), undefined, { numeric: true })
+      );
+      return docs;
     } catch (error) {
       console.error("Error fetching routes:", error);
       throw error;
     }
   },
 
-  /**
-   * Alias for getAllRoutes — used by routes/index.jsx
-   */
-  getRoutes: async () => {
-    return FirestoreService.getAllRoutes();
-  },
+  getRoutes: async () => FirestoreService.getAllRoutes(),
 
-  /**
-   * Fetch a single route by ID
-   */
   getRouteById: async (id) => {
     try {
-      const routeRef = doc(db, "routes", id);
-      const snapshot = await getDoc(routeRef);
+      const snapshot = await getDoc(doc(db, "routes", id));
       if (!snapshot.exists()) return null;
       return { id: snapshot.id, ...snapshot.data() };
     } catch (error) {
@@ -64,23 +50,16 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Fetch all stops (Heavy read operation - Should be cached locally)
-   */
   getAllStops: async () => {
     try {
-      const stopsCol = collection(db, "stops");
-      const snapshot = await getDocs(stopsCol);
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const snapshot = await getDocs(collection(db, "stops"));
+      return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     } catch (error) {
       console.error("Error fetching stops:", error);
       throw error;
     }
   },
 
-  /**
-   * Admin: Add a new route
-   */
   addRoute: async (routeData) => {
     try {
       const docRef = await addDoc(collection(db, "routes"), {
@@ -95,13 +74,9 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Update User Profile (e.g., after R2 image upload)
-   */
   updateUserProfile: async (uid, data) => {
     try {
-      const userRef = doc(db, "users", uid);
-      await updateDoc(userRef, {
+      await updateDoc(doc(db, "users", uid), {
         ...data,
         updatedAt: serverTimestamp(),
       });

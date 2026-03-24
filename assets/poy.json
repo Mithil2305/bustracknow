@@ -1,0 +1,100 @@
+[
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Coimbatore",
+    "via_stops": [],
+    "schedule_times": ["Every 2 minutes"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Palani",
+    "via_stops": [],
+    "schedule_times": ["Every 5 minutes"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Udumalai",
+    "via_stops": [],
+    "schedule_times": ["Every 10 minutes"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Tiruppur",
+    "via_stops": [],
+    "schedule_times": ["Every 20 minutes"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Erode",
+    "via_stops": [],
+    "schedule_times": ["Every 1 Hour"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Gopi",
+    "via_stops": [],
+    "schedule_times": ["Every 1 1/2 Hour"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Selam",
+    "via_stops": [],
+    "schedule_times": ["Every 2 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Madurai",
+    "via_stops": [],
+    "schedule_times": ["Every 3 1/2 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Dharapuram & Karur",
+    "via_stops": [],
+    "schedule_times": ["Every 2 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Valparai",
+    "via_stops": [],
+    "schedule_times": ["Every 30 minutes"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Kadamparai",
+    "via_stops": [],
+    "schedule_times": ["Every 3 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Navamalai",
+    "via_stops": [],
+    "schedule_times": ["Every 4 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Top Slip",
+    "via_stops": [],
+    "schedule_times": ["Every 4 Hours"]
+  },
+  {
+    "bus_number": "N/A",
+    "origin": "Pollachi",
+    "destination": "Parambikulam",
+    "via_stops": [],
+    "schedule_times": ["Every 3 1/2 Hours"]
+  }
+]

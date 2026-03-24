@@ -27,26 +27,20 @@ const getS3Client = () => {
 };
 
 /**
- * Upload file directly to Cloudflare R2 (bypasses Firebase Storage)
- * PDF Requirement: Zero egress fees for profile pics & route images
+ * Upload file directly to Cloudflare R2.
+ * No Firebase Storage — only Firestore, RTDB, and Auth are used.
  * @param {Object} file - { uri, name, type }
  * @param {string} path - Storage path (e.g., 'profiles/user123.jpg')
  * @returns {Promise<string>} Public URL
  */
 export const uploadToR2 = async (file, path) => {
+  const client = getS3Client();
+  if (!client) {
+    console.warn("R2 client not configured — upload skipped");
+    return null;
+  }
+
   try {
-    // ✅ Fallback to Firebase Storage in development
-    if (!R2_CONFIG.ACCOUNT_ID || __DEV__) {
-      console.warn("⚠️ Using Firebase Storage fallback (dev mode or missing R2 config)");
-      const snapshot = await uploadToFbStorage(file, path);
-      const { getDownloadURL: getFbUrl } = await import("firebase/storage");
-      return await getFbUrl(snapshot.ref);
-    }
-
-    const client = getS3Client();
-    if (!client) throw new Error("R2 client not initialized");
-
-    // ✅ Convert file URI to Blob
     const blob = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.onload = () => resolve(xhr.response);
@@ -56,55 +50,26 @@ export const uploadToR2 = async (file, path) => {
       xhr.send(null);
     });
 
-    // ✅ Upload to R2
     const command = new PutObjectCommand({
       Bucket: R2_CONFIG.BUCKET_NAME,
       Key: path,
       Body: blob,
       ContentType: file.type || "image/jpeg",
-      ACL: "public-read", // Critical for direct public access
+      ACL: "public-read",
     });
 
     await client.send(command);
 
-    // ✅ Construct public URL (Cloudflare R2 public endpoint)
     const publicUrl = `https://${R2_CONFIG.BUCKET_NAME}.${R2_CONFIG.ACCOUNT_ID}.r2.cloudflarestorage.com/${path}`;
-
-    console.log(`✅ Uploaded to R2: ${path}`);
+    console.log(`Uploaded to R2: ${path}`);
     return publicUrl;
   } catch (error) {
-    console.error("❌ R2 upload failed:", error);
-
-    // ✅ Graceful fallback to Firebase Storage
-    if (!__DEV__) {
-      console.warn("⚠️ Falling back to Firebase Storage");
-      try {
-        const snapshot = await uploadToFbStorage(file, path);
-        const { getDownloadURL: getFbUrl } = await import("firebase/storage");
-        return await getFbUrl(snapshot.ref);
-      } catch (fallbackError) {
-        console.error("❌ Fallback upload also failed:", fallbackError);
-        throw fallbackError;
-      }
-    }
-
+    console.error("R2 upload failed:", error);
     throw error;
   }
 };
 
-// Helper: Firebase Storage fallback (for development)
-const uploadToFbStorage = async (file, path) => {
-  const { getStorage, ref, uploadBytes } = await import("firebase/storage");
-  const storage = getStorage();
-  const storageRef = ref(storage, path);
-
-  const response = await fetch(file.uri);
-  const blob = await response.blob();
-
-  return uploadBytes(storageRef, blob);
-};
-
-// ✅ Export for direct use in components
+// Export for direct use in components
 export const uploadProfilePicture = (file, userId) => uploadToR2(file, `profiles/${userId}.jpg`);
 
 export const uploadRouteImage = (file, routeId) => uploadToR2(file, `routes/${routeId}.jpg`);

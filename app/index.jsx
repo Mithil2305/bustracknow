@@ -7,9 +7,12 @@ import { palette } from "../design/tokens";
 import { auth } from "../services/firebase/firebaseConfig";
 import { useAuthStore } from "../store/authStore";
 
+const AUTH_TIMEOUT_MS = 5000; // max wait for Firebase auth
+
 export default function Index() {
-  const { user, userProfile, isLoading, setUser, setLoading } = useAuthStore();
+  const { user, userProfile, setUser } = useAuthStore();
   const [hasOnboarded, setHasOnboarded] = useState(null); // null = checking
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     // Check onboarding status from AsyncStorage (PDF spec step 1)
@@ -17,15 +20,25 @@ export default function Index() {
       setHasOnboarded(value === "true");
     });
 
-    setLoading(true);
+    // Listen for auth state
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u || null);
+      setAuthReady(true);
     });
-    return unsub;
-  }, [setLoading, setUser]);
+
+    // Safety timeout — if Firebase never responds, don't hang forever
+    const timer = setTimeout(() => {
+      setAuthReady(true);
+    }, AUTH_TIMEOUT_MS);
+
+    return () => {
+      unsub();
+      clearTimeout(timer);
+    };
+  }, [setUser]);
 
   // Still checking onboarding or auth state
-  if (isLoading || hasOnboarded === null) {
+  if (!authReady || hasOnboarded === null) {
     return (
       <View
         style={{

@@ -1,70 +1,213 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
-import { palette, radius, shadow, spacing } from "../../design/tokens";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { StyleSheet, View } from "react-native";
+import { WebView } from "react-native-webview";
+import { radius, shadow, spacing } from "../../design/tokens";
 
 /**
- * LiveMap stub – fallback when WebView is unavailable.
- * The real LiveMap uses OpenStreetMap via a WebView + Leaflet.
- * This placeholder renders a styled card so the rest of the app can
- * load and function while you iterate on the UI.
+ * LiveMap – renders an OpenStreetMap (Leaflet) inside a WebView.
+ * Works on Android & iOS. Web variant lives in LiveMap.web.jsx.
  */
-export default function LiveMap({ style, children }) {
+export default function LiveMap({
+  initialRegion = {
+    latitude: 11.0168,
+    longitude: 76.9558,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  },
+  buses = [],
+  stops = [],
+  route = [],
+  userLocation = null,
+  onBusPress,
+  onStopPress,
+  style,
+  children,
+}) {
+  const webViewRef = useRef(null);
+
+  // Build the Leaflet HTML once based on initial region
+  const leafletHtml = useMemo(() => buildLeafletHtml(initialRegion), [initialRegion]);
+
+  // Push marker / polyline data whenever props change
+  useEffect(() => {
+    const payload = JSON.stringify({ buses, stops, route });
+    webViewRef.current?.injectJavaScript(`
+      window.__updateMarkers && window.__updateMarkers(${payload});
+      true;
+    `);
+  }, [buses, stops, route]);
+
+  // Push user location blue dot whenever it changes
+  useEffect(() => {
+    if (!userLocation) return;
+    const loc = JSON.stringify(userLocation);
+    webViewRef.current?.injectJavaScript(`
+      window.__updateUserLocation && window.__updateUserLocation(${loc});
+      true;
+    `);
+  }, [userLocation]);
+
+  // Handle messages from the WebView (marker taps)
+  const handleMessage = useCallback(
+    (event) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg.type === "busPress" && onBusPress) {
+          const bus = buses.find((b) => b.id === msg.id);
+          if (bus) onBusPress(bus);
+        }
+        if (msg.type === "stopPress" && onStopPress) {
+          const stop = stops.find((s) => s.id === msg.id);
+          if (stop) onStopPress(stop);
+        }
+      } catch (_e) {
+        // ignore non-JSON messages
+      }
+    },
+    [buses, stops, onBusPress, onStopPress]
+  );
+
   return (
     <View style={[styles.card, style]}>
-      <View style={styles.placeholder}>
-        <View style={styles.iconWrap}>
-          <Ionicons name="map-outline" size={40} color={palette.primary} />
-        </View>
-        <Text style={styles.title}>Map Preview</Text>
-        <Text style={styles.subtitle}>OpenStreetMap loading...</Text>
-        <Text style={styles.hint}>Ensure react-native-webview is installed.</Text>
-      </View>
+      <WebView
+        ref={webViewRef}
+        originWhitelist={["*"]}
+        source={{ html: leafletHtml }}
+        style={StyleSheet.absoluteFill}
+        javaScriptEnabled
+        domStorageEnabled
+        onMessage={handleMessage}
+        scrollEnabled={false}
+        bounces={false}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        androidLayerType="hardware"
+        startInLoadingState={false}
+      />
       {children ? <View style={styles.overlay}>{children}</View> : null}
     </View>
   );
+}
+
+// ── Leaflet HTML builder ───────────────────────────────────────────
+function buildLeafletHtml(region) {
+  const zoom = Math.round(Math.log2(360 / (region.latitudeDelta || 0.05)) + 1);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
+#map{width:100%;height:100%;}
+.bus-marker{
+  background:#0b7a9d;color:#fff;font-weight:800;font-size:12px;
+  padding:4px 8px;border-radius:8px;text-align:center;white-space:nowrap;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+.bus-marker.inactive{background:#ccc;opacity:0.6;}
+.bus-meta{font-size:10px;font-weight:600;margin-top:2px;color:#fff;}
+.stop-marker{
+  width:16px;height:16px;border-radius:50%;border:3px solid #fff;
+  background:#10B981;box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+.stop-marker.inactive{background:#ccc;}
+.user-dot{
+  width:18px;height:18px;border-radius:50%;background:#4285F4;
+  border:3px solid #fff;box-shadow:0 0 8px rgba(66,133,244,0.6);
+}
+.user-accuracy{
+  border:2px solid rgba(66,133,244,0.3);background:rgba(66,133,244,0.1);
+  border-radius:50%;
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var map=L.map('map',{zoomControl:false}).setView([${region.latitude},${region.longitude}],${zoom});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,
+  attribution:'\\u00a9 OpenStreetMap'
+}).addTo(map);
+
+var busMarkers=[],stopMarkers=[],routeLine=null;
+function clearLayer(arr){arr.forEach(function(m){map.removeLayer(m)});arr.length=0;}
+
+window.__updateMarkers=function(data){
+  if(routeLine){map.removeLayer(routeLine);routeLine=null;}
+  if(data.route&&data.route.length>1){
+    var latlngs=data.route.map(function(p){return[p.latitude,p.longitude]});
+    routeLine=L.polyline(latlngs,{color:'#0b7a9d',weight:4,opacity:0.8}).addTo(map);
+  }
+  clearLayer(stopMarkers);
+  (data.stops||[]).forEach(function(s){
+    var icon=L.divIcon({
+      className:'',
+      html:'<div class="stop-marker'+(s.active===false?' inactive':'')+'"></div>',
+      iconSize:[16,16],iconAnchor:[8,8]
+    });
+    var m=L.marker([s.lat,s.lng],{icon:icon}).addTo(map);
+    m.bindTooltip(s.name||'Stop',{direction:'top',offset:[0,-10]});
+    m.on('click',function(){
+      window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'stopPress',id:s.id}));
+    });
+    stopMarkers.push(m);
+  });
+  clearLayer(busMarkers);
+  (data.buses||[]).forEach(function(b){
+    var active=b.active!==false;
+    var html='<div class="bus-marker'+(active?'':' inactive')+'" style="transform:rotate('+(b.heading||0)+'deg)">'
+      +b.label
+      +'<div class="bus-meta">'+(b.eta||'')+' \\u2022 '+(b.crowd||'')+'</div>'
+      +'</div>';
+    var icon=L.divIcon({className:'',html:html,iconSize:[60,36],iconAnchor:[30,18]});
+    var m=L.marker([b.lat,b.lng],{icon:icon}).addTo(map);
+    m.on('click',function(){
+      window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'busPress',id:b.id}));
+    });
+    busMarkers.push(m);
+  });
+};
+
+var userMarker=null,userAccuracy=null;
+window.__updateUserLocation=function(loc){
+  if(!loc||!loc.latitude||!loc.longitude) return;
+  var ll=[loc.latitude,loc.longitude];
+  if(userMarker){
+    userMarker.setLatLng(ll);
+  } else {
+    var icon=L.divIcon({className:'',html:'<div class="user-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+    userMarker=L.marker(ll,{icon:icon,zIndexOffset:1000}).addTo(map);
+    userMarker.bindTooltip('You',{direction:'top',offset:[0,-12]});
+    map.setView(ll,15);
+  }
+  if(loc.accuracy){
+    var r=loc.accuracy;
+    if(userAccuracy){
+      userAccuracy.setLatLng(ll);
+      userAccuracy.setRadius(r);
+    } else {
+      userAccuracy=L.circle(ll,{radius:r,className:'user-accuracy',weight:2,fillOpacity:0.1,color:'#4285F4'}).addTo(map);
+    }
+  }
+};
+<\/script>
+</body>
+</html>`;
 }
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
     overflow: "hidden",
-    backgroundColor: "#E8F4F8",
+    backgroundColor: "#E5ECFF",
     minHeight: 320,
     ...shadow.card,
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.xl,
-    minHeight: 320,
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.full,
-    backgroundColor: palette.primaryLight,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: palette.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: palette.subtext,
-    textAlign: "center",
-    marginBottom: spacing.xs,
-  },
-  hint: {
-    fontSize: 12,
-    color: palette.muted,
-    textAlign: "center",
-    fontStyle: "italic",
   },
   overlay: {
     position: "absolute",

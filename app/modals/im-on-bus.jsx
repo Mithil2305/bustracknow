@@ -1,42 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ConfirmRideModal } from "../../components/overlays";
 import { palette, radius, shadow, spacing } from "../../design/tokens";
-
-const NEARBY_BUSES = [
-  {
-    id: "1",
-    route: "43A",
-    color: palette.success,
-    origin: "City Center",
-    destination: "Railway Station",
-    nextStop: "Market Square",
-  },
-  {
-    id: "2",
-    route: "12B",
-    color: "#F59E0B",
-    origin: "Market Road",
-    destination: "Hospital",
-    nextStop: "General Hospital",
-  },
-  {
-    id: "3",
-    route: "8C",
-    color: palette.success,
-    origin: "Main Road",
-    destination: "Tech Park",
-    nextStop: "Cyber Hub",
-  },
-];
+import { useCachedRoutes } from "../../hooks/useCachedRoutes";
 
 export default function ImOnBusScreen() {
   const router = useRouter();
   const [selectedBus, setSelectedBus] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { routes, loading } = useCachedRoutes({ auto: true });
 
   const handleConfirm = () => {
     if (!selectedBus) return;
@@ -49,11 +31,15 @@ export default function ImOnBusScreen() {
     router.replace({
       pathname: "/modals/active-sharing",
       params: {
-        route: selectedBus.route,
+        route: selectedBus.number,
         routeName: `${selectedBus.origin} - ${selectedBus.destination}`,
       },
     });
   };
+
+  // Deterministic colour per route number
+  const ROUTE_COLORS = [palette.primary, "#8B5CF6", "#F59E0B", "#EF4444", "#10B981", "#3B82F6"];
+  const routeColor = (num) => ROUTE_COLORS[(parseInt(num, 10) || 0) % ROUTE_COLORS.length];
 
   return (
     <SafeAreaView style={s.safe}>
@@ -87,28 +73,44 @@ export default function ImOnBusScreen() {
         {/* Select Your Bus */}
         <Text style={s.sectionTitle}>Select Your Bus</Text>
 
-        {NEARBY_BUSES.map((bus) => {
-          const isSelected = selectedBus?.id === bus.id;
-          return (
-            <TouchableOpacity
-              key={bus.id}
-              style={[s.busCard, isSelected && s.busCardSelected]}
-              onPress={() => setSelectedBus(bus)}
-              activeOpacity={0.7}
-            >
-              <View style={[s.routeCircle, { backgroundColor: bus.color }]}>
-                <Text style={s.routeText}>{bus.route}</Text>
-              </View>
-              <View style={s.busInfo}>
-                <Text style={s.busName}>
-                  {bus.origin} - {bus.destination}
-                </Text>
-                <Text style={s.busNextStop}>Next Stop: {bus.nextStop}</Text>
-              </View>
-              {isSelected && <Ionicons name="checkmark-circle" size={24} color={palette.primary} />}
-            </TouchableOpacity>
-          );
-        })}
+        {loading ? (
+          <View style={s.loadingWrap}>
+            <ActivityIndicator size="large" color={palette.primary} />
+            <Text style={s.loadingText}>Loading routes…</Text>
+          </View>
+        ) : routes.length === 0 ? (
+          <View style={s.loadingWrap}>
+            <Text style={s.loadingText}>No routes available</Text>
+          </View>
+        ) : (
+          routes.map((bus) => {
+            const isSelected = selectedBus?.id === bus.id;
+            const color = routeColor(bus.number);
+            return (
+              <TouchableOpacity
+                key={bus.id}
+                style={[s.busCard, isSelected && s.busCardSelected]}
+                onPress={() => setSelectedBus(bus)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.routeCircle, { backgroundColor: color }]}>
+                  <Text style={s.routeText}>{bus.number}</Text>
+                </View>
+                <View style={s.busInfo}>
+                  <Text style={s.busName} numberOfLines={1}>
+                    {bus.origin} - {bus.destination}
+                  </Text>
+                  <Text style={s.busNextStop}>
+                    {Array.isArray(bus.stops) ? bus.stops.length : 0} stops
+                  </Text>
+                </View>
+                {isSelected && (
+                  <Ionicons name="checkmark-circle" size={24} color={palette.primary} />
+                )}
+              </TouchableOpacity>
+            );
+          })
+        )}
       </ScrollView>
 
       {/* CTA Button */}
@@ -261,5 +263,14 @@ const s = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "700",
+  },
+  loadingWrap: {
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: palette.muted,
   },
 });

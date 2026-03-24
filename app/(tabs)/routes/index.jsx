@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmptyState from "../../../components/common/EmptyState";
 import Loader from "../../../components/common/Loader";
 import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
-import { FirestoreService } from "../../../services/firebase/firestoreService";
+import { useCachedRoutes } from "../../../hooks/useCachedRoutes";
 
 const ROUTE_COLORS = [
   palette.primary,
@@ -18,30 +18,20 @@ const ROUTE_COLORS = [
 
 export default function RoutesIndex() {
   const router = useRouter();
-  const [routes, setRoutes] = useState([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { routes, loading, error } = useCachedRoutes({ auto: true });
 
-  useEffect(() => {
-    loadRoutes();
-  }, []);
-
-  const loadRoutes = async () => {
-    try {
-      const data = await FirestoreService.getRoutes();
-      setRoutes(data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filtered = routes.filter(
-    (r) =>
-      r.name?.toLowerCase().includes(search.toLowerCase()) ||
-      r.number?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = routes.filter((r) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      r.number?.toLowerCase().includes(q) ||
+      r.name?.toLowerCase().includes(q) ||
+      r.origin?.toLowerCase().includes(q) ||
+      r.destination?.toLowerCase().includes(q) ||
+      r.stops?.some((s) => String(s).toLowerCase().includes(q))
+    );
+  });
 
   const renderRoute = ({ item, index }) => (
     <TouchableOpacity
@@ -56,13 +46,18 @@ export default function RoutesIndex() {
       </View>
       <View style={styles.info}>
         <Text style={styles.routeName} numberOfLines={1}>
-          {item.name}
+          {item.origin && item.destination ? `${item.origin} → ${item.destination}` : item.name}
         </Text>
         <View style={styles.metaRow}>
           <Ionicons name="location-outline" size={12} color={colors.gray400} />
           <Text style={styles.meta}>{item.stops?.length || 0} stops</Text>
-          <View style={styles.metaDot} />
-          <Text style={styles.meta}>{item.distance || "—"} km</Text>
+          {item.scheduleTimes?.length > 0 && (
+            <>
+              <View style={styles.metaDot} />
+              <Ionicons name="time-outline" size={12} color={colors.gray400} />
+              <Text style={styles.meta}>{item.scheduleTimes.length} departures</Text>
+            </>
+          )}
         </View>
       </View>
       <View style={styles.arrowWrap}>
@@ -72,6 +67,14 @@ export default function RoutesIndex() {
   );
 
   if (loading) return <Loader />;
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <EmptyState message={`Failed to load routes:\n${error}`} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>

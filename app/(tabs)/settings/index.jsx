@@ -1,114 +1,187 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, palette, shadow, spacing } from "../../../design/tokens";
+import { colors, palette, spacing } from "../../../design/tokens";
 import { useAuthStore } from "../../../store/authStore";
 
 export default function SettingsIndex() {
   const router = useRouter();
   const { userProfile, logout } = useAuthStore();
 
-  const sections = [
-    {
-      label: "Badges & Levels",
-      desc: "View your achievements",
-      icon: "ribbon",
-      iconBg: "#FEF3C7",
-      iconColor: "#D97706",
-      route: "/(tabs)/settings/badges",
-    },
-    {
-      label: "Leaderboard",
-      desc: "See top contributors",
-      icon: "podium",
-      iconBg: "#DBEAFE",
-      iconColor: "#2563EB",
-      route: "/(tabs)/settings/leaderboard",
-    },
-    {
-      label: "Saved Routes",
-      desc: "Your bookmarked routes",
-      icon: "bookmark",
-      iconBg: "#CCFBF1",
-      iconColor: palette.primary,
-      route: "/(tabs)/settings/saved",
-    },
-    {
-      label: "Edit Profile",
-      desc: "Update your info",
-      icon: "person",
-      iconBg: "#F3E8FF",
-      iconColor: "#7C3AED",
-      route: "/(auth)/profile",
-    },
-  ];
+  const [rewardsEnabled, setRewardsEnabled] = useState(true);
+  const [busAlerts, setBusAlerts] = useState(true);
+  const [rewardAlerts, setRewardAlerts] = useState(true);
+
+  const displayName = userProfile?.displayName || "Rajesh Kumar";
+  const phone = userProfile?.phone || "+91 98765 43210";
+  const initials = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <Text style={styles.screenTitle}>Settings</Text>
-
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {(userProfile?.displayName || "U")[0].toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.onlineDot} />
-          </View>
-          <Text style={styles.name}>{userProfile?.displayName || "User"}</Text>
-          <Text style={styles.phone}>{userProfile?.phone || "+91 XXXXX XXXXX"}</Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>320</Text>
-              <Text style={styles.statLabel}>Points</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>Lv 2</Text>
-              <Text style={styles.statLabel}>Level</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>5</Text>
-              <Text style={styles.statLabel}>Badges</Text>
-            </View>
-          </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12} activeOpacity={0.6}>
+            <Ionicons name="arrow-back" size={24} color={colors.gray900} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        {/* Menu Sections */}
-        <View style={styles.menuSection}>
-          {sections.map((s) => (
-            <TouchableOpacity
-              key={s.label}
-              style={styles.menuRow}
-              onPress={() => router.push(s.route)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: s.iconBg }]}>
-                <Ionicons name={s.icon} size={18} color={s.iconColor} />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuLabel}>{s.label}</Text>
-                <Text style={styles.menuDesc}>{s.desc}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.gray300} />
-            </TouchableOpacity>
-          ))}
+        {/* Profile Row */}
+        <View style={styles.profileRow}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{displayName}</Text>
+            <Text style={styles.profilePhone}>{phone}</Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push("/(auth)/profile")} activeOpacity={0.6}>
+            <Text style={styles.editLink}>Edit</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Logout */}
+        {/* Rewards & Payouts */}
+        <Text style={styles.sectionTitle}>
+          <Text style={{ color: "#D97706" }}>✦ </Text>
+          Rewards & Payouts
+        </Text>
+
+        {/* Enable Rewards */}
+        <View style={styles.settingRow}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="gift-outline" size={20} color="#D97706" />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Enable Rewards</Text>
+            <Text style={styles.settingDesc}>Earn points for contributions</Text>
+          </View>
+          <Switch
+            value={rewardsEnabled}
+            onValueChange={setRewardsEnabled}
+            trackColor={{ false: "#E2E8F0", true: palette.primary }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        {/* UPI ID */}
+        <View style={styles.settingRow}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="card-outline" size={20} color="#D97706" />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>UPI ID</Text>
+            <Text style={styles.settingDesc}>Not set</Text>
+          </View>
+          <TouchableOpacity style={styles.changeBtn} activeOpacity={0.7}>
+            <Text style={styles.changeBtnText}>Change</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Badges & Leaderboard cards */}
+        <TouchableOpacity
+          style={styles.linkCard}
+          onPress={() => router.push("/(tabs)/settings/badges")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.linkCardText}>View Badges & Levels</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.linkCard}
+          onPress={() => router.push("/(tabs)/settings/leaderboard")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.linkCardText}>Leaderboard</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </TouchableOpacity>
+
+        {/* Preferences */}
+        <Text style={styles.sectionTitle}>Preferences</Text>
+
+        <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="globe-outline" size={20} color={colors.gray600} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Language</Text>
+            <Text style={styles.settingDesc}>English</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </TouchableOpacity>
+
+        {/* Notifications */}
+        <Text style={styles.sectionTitle}>Notifications</Text>
+
+        <View style={styles.settingRow}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="notifications-outline" size={20} color={colors.gray600} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Bus Arrival Alerts</Text>
+            <Text style={styles.settingDesc}>Get notified when bus is near</Text>
+          </View>
+          <Switch
+            value={busAlerts}
+            onValueChange={setBusAlerts}
+            trackColor={{ false: "#E2E8F0", true: palette.primary }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        <View style={styles.settingRow}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="gift-outline" size={20} color={colors.gray600} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Reward Alerts</Text>
+            <Text style={styles.settingDesc}>Points credited & payouts</Text>
+          </View>
+          <Switch
+            value={rewardAlerts}
+            onValueChange={setRewardAlerts}
+            trackColor={{ false: "#E2E8F0", true: palette.primary }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        {/* Privacy & Data */}
+        <Text style={styles.sectionTitle}>Privacy & Data</Text>
+
+        <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="shield-outline" size={20} color={colors.gray600} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Privacy Policy</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <View style={styles.settingIconWrap}>
+            <Ionicons name="server-outline" size={20} color={colors.gray600} />
+          </View>
+          <View style={styles.settingContent}>
+            <Text style={styles.settingLabel}>Data Usage</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
+        </TouchableOpacity>
+
+        {/* Log Out */}
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.7}>
           <Ionicons name="log-out-outline" size={20} color={palette.danger} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
-
-        <Text style={styles.versionText}>BusTrackNow v1.2.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,139 +189,156 @@ export default function SettingsIndex() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.background },
-  container: { padding: spacing.xl, paddingBottom: 40 },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: colors.gray900,
-    marginBottom: spacing.xl,
-  },
-  profileCard: {
-    backgroundColor: palette.card,
-    borderRadius: 20,
-    padding: spacing.xl,
+  container: { paddingBottom: 40 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.xl,
-    ...shadow.card,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
-  avatarWrap: {
-    position: "relative",
-    marginBottom: spacing.md,
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.gray900,
+    marginLeft: spacing.md,
+  },
+
+  /* Profile Row */
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.sm,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: palette.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "700",
     color: "#FFFFFF",
   },
-  onlineDot: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: palette.success,
-    borderWidth: 3,
-    borderColor: palette.card,
+  profileInfo: {
+    flex: 1,
+    marginLeft: spacing.lg,
   },
-  name: {
-    fontSize: 19,
+  profileName: {
+    fontSize: 17,
     fontWeight: "700",
     color: colors.gray900,
   },
-  phone: {
+  profilePhone: {
     fontSize: 13,
     color: colors.gray500,
     marginTop: 2,
-    marginBottom: spacing.lg,
   },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: palette.background,
-    borderRadius: 14,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    width: "100%",
+  editLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: palette.primary,
   },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 17,
-    fontWeight: "800",
+
+  /* Section Title */
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
     color: colors.gray900,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
   },
-  statLabel: {
-    fontSize: 11,
-    color: colors.gray500,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: palette.border,
-  },
-  menuSection: {
-    backgroundColor: palette.card,
-    borderRadius: 18,
-    overflow: "hidden",
-    marginBottom: spacing.xl,
-    ...shadow.soft,
-  },
-  menuRow: {
+
+  /* Setting Row */
+  settingRow: {
     flexDirection: "row",
     alignItems: "center",
-    padding: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 14,
+    backgroundColor: palette.card,
     borderBottomWidth: 1,
     borderBottomColor: palette.borderLight,
   },
-  menuIcon: {
+  settingIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 20,
+    backgroundColor: palette.background,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,
   },
-  menuContent: {
+  settingContent: {
     flex: 1,
   },
-  menuLabel: {
+  settingLabel: {
     fontSize: 15,
     fontWeight: "600",
     color: colors.gray800,
   },
-  menuDesc: {
+  settingDesc: {
     fontSize: 12,
     color: colors.gray500,
-    marginTop: 1,
+    marginTop: 2,
   },
+
+  /* Change Button */
+  changeBtn: {
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  changeBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.gray800,
+  },
+
+  /* Link Cards (Badges & Leaderboard) */
+  linkCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 16,
+    backgroundColor: "#FFF9EB",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FEEAAE",
+  },
+  linkCardText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: palette.primary,
+  },
+
+  /* Log Out */
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: spacing.lg,
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.xxxl,
+    paddingVertical: 16,
+    backgroundColor: palette.background,
+    borderRadius: 12,
     gap: 8,
   },
   logoutText: {
     fontSize: 15,
     fontWeight: "600",
     color: palette.danger,
-  },
-  versionText: {
-    textAlign: "center",
-    fontSize: 12,
-    color: colors.gray400,
-    marginTop: spacing.sm,
   },
 });

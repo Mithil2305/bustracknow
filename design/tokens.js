@@ -86,3 +86,35 @@ export const shadow = {
     elevation: 1,
   },
 };
+
+/**
+ * Google Sans Flex font family tokens.
+ * Loaded in app/_layout.jsx via expo-font / useFonts.
+ */
+export const fonts = {
+  regular: "GoogleSansFlex-Regular",
+  medium: "GoogleSansFlex-Medium",
+  semiBold: "GoogleSansFlex-SemiBold",
+  bold: "GoogleSansFlex-Bold",
+  extraBold: "GoogleSansFlex-ExtraBold",
+};
+
+/**
+ * Maps a numeric fontWeight string to the corresponding Google Sans Flex fontFamily.
+ * Usage: fontForWeight("700") → "GoogleSansFlex-Bold"
+ */
+export const fontForWeight = (weight) => {
+  switch (weight) {
+    case "800":
+    case "900":
+      return fonts.extraBold;
+    case "700":
+      return fonts.bold;
+    case "600":
+      return fonts.semiBold;
+    case "500":
+      return fonts.medium;
+    default:
+      return fonts.regular;
+  }
+};

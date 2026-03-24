@@ -12,6 +12,10 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "BusTrackNow needs your location to show nearby stops and buses on the map.",
+      },
     },
     android: {
       adaptiveIcon: {
@@ -19,6 +23,7 @@ export default {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
+      permissions: ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
     },
     web: {
       output: "static",
@@ -26,6 +31,13 @@ export default {
     },
     plugins: [
       "expo-router",
+      [
+        "expo-location",
+        {
+          locationWhenInUsePermission:
+            "BusTrackNow needs your location to show nearby stops and buses on the map.",
+        },
+      ],
       [
         "expo-splash-screen",
         {

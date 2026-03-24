@@ -9,14 +9,15 @@ import { radius, shadow, spacing } from "../../design/tokens";
  */
 export default function LiveMap({
   initialRegion = {
-    latitude: 37.7749,
-    longitude: -122.4194,
+    latitude: 11.0168,
+    longitude: 76.9558,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   },
   buses = [],
   stops = [],
   route = [],
+  userLocation = null,
   onBusPress,
   onStopPress,
   style,
@@ -35,6 +36,16 @@ export default function LiveMap({
 			true;
 		`);
   }, [buses, stops, route]);
+
+  // Push user location blue dot whenever it changes
+  useEffect(() => {
+    if (!userLocation) return;
+    const loc = JSON.stringify(userLocation);
+    webViewRef.current?.injectJavaScript(`
+			window.__updateUserLocation && window.__updateUserLocation(${loc});
+			true;
+		`);
+  }, [userLocation]);
 
   // Handle messages from the WebView (marker taps)
   const handleMessage = useCallback(
@@ -105,6 +116,14 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
   background:#10B981;box-shadow:0 2px 6px rgba(0,0,0,0.3);
 }
 .stop-marker.inactive{background:#ccc;}
+.user-dot{
+  width:18px;height:18px;border-radius:50%;background:#4285F4;
+  border:3px solid #fff;box-shadow:0 0 8px rgba(66,133,244,0.6);
+}
+.user-accuracy{
+  border:2px solid rgba(66,133,244,0.3);background:rgba(66,133,244,0.1);
+  border-radius:50%;
+}
 </style>
 </head>
 <body>
@@ -153,6 +172,29 @@ window.__updateMarkers=function(data){
     });
     busMarkers.push(m);
   });
+};
+
+var userMarker=null,userAccuracy=null;
+window.__updateUserLocation=function(loc){
+  if(!loc||!loc.latitude||!loc.longitude) return;
+  var ll=[loc.latitude,loc.longitude];
+  if(userMarker){
+    userMarker.setLatLng(ll);
+  } else {
+    var icon=L.divIcon({className:'',html:'<div class="user-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+    userMarker=L.marker(ll,{icon:icon,zIndexOffset:1000}).addTo(map);
+    userMarker.bindTooltip('You',{direction:'top',offset:[0,-12]});
+    map.setView(ll,15);
+  }
+  if(loc.accuracy){
+    var r=loc.accuracy;
+    if(userAccuracy){
+      userAccuracy.setLatLng(ll);
+      userAccuracy.setRadius(r);
+    } else {
+      userAccuracy=L.circle(ll,{radius:r,className:'user-accuracy',weight:2,fillOpacity:0.1,color:'#4285F4'}).addTo(map);
+    }
+  }
 };
 <\/script>
 </body>

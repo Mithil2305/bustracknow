@@ -1,73 +1,122 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EmptyState from "../../../components/common/EmptyState";
 import Loader from "../../../components/common/Loader";
+import { requestLocationPermission } from "../../../config/permissions";
 import { colors, palette, radius, shadow, spacing } from "../../../design/tokens";
 import { FirestoreService } from "../../../services/firebase/firestoreService";
+
+// Conditionally require map to prevent crashes if WebView not available
+let LiveMap;
+try {
+  LiveMap = require("../../../components/map/LiveMap").default;
+} catch (_e) {
+  LiveMap = null;
+}
 
 export default function RouteDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [route, setRoute] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
+  const locationSubRef = useRef(null);
 
-  // Mock extended data since firestore may only have basic stops
-  const mockExtendedStops = useMemo(
-    () => [
-      { id: "1", name: "City Center", time: "10:15 AM", status: "departed" },
-      { id: "2", name: "Main Road Junction", time: "10:22 AM", status: "departed" },
-      {
-        id: "3",
-        name: "College Road",
-        time: "10:38 AM",
-        status: "upcoming",
-        eta: "12 min",
-        canConfirm: true,
-      },
-      {
-        id: "4",
-        name: "Railway Station",
-        time: "10:44 AM",
-        status: "upcoming",
-        eta: "18 min",
-        canConfirm: true,
-      },
-    ],
-    []
-  );
-
-  const loadRoute = useCallback(async () => {
-    try {
-      const data = await FirestoreService.getRouteById(id);
-      setRoute(data);
-    } catch {
-      // silent
-    } finally {
-      // Create mock data even if failed for UI demonstration purposes
-      if (!route) {
-        setRoute({
-          id: id || "12B",
-          number: "12B",
-          name: "City Center - Railway Station",
-          stops: mockExtendedStops,
-        });
-      }
-      setLoading(false);
-    }
-  }, [id, route, mockExtendedStops]);
-
+  // Request location and watch position
   useEffect(() => {
-    loadRoute();
-  }, [loadRoute]);
+    let cancelled = false;
+    (async () => {
+      const granted = await requestLocationPermission();
+      if (!granted || cancelled) return;
+      try {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled)
+          setUserLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+      } catch (_e) {
+        /* silent */
+      }
+      try {
+        locationSubRef.current = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 10 },
+          (pos) => {
+            if (!cancelled)
+              setUserLocation({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+              });
+          }
+        );
+      } catch (_e) {
+        /* silent */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      locationSubRef.current?.remove();
+    };
+  }, []);
+
+  // Fetch real route from Firestore
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await FirestoreService.getRouteById(id);
+        if (!cancelled) setRoute(data || null);
+      } catch (_e) {
+        if (!cancelled) setRoute(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Normalise stops: Firestore stores stops as string[] — convert to display objects
+  const displayStops = useMemo(() => {
+    if (!route) return [];
+    const rawStops = route.stops || [];
+    return rawStops.map((s, i) => ({
+      id: String(i),
+      name: typeof s === "string" ? s : s.name || `Stop ${i + 1}`,
+      lat: typeof s === "object" ? s.lat : null,
+      lng: typeof s === "object" ? s.lng : null,
+    }));
+  }, [route]);
+
+  // Build map stops — spread along Coimbatore area if no real coords
+  const mapStops = useMemo(() => {
+    const baseLat = 11.0168;
+    const baseLng = 76.9558;
+    return displayStops.map((s, i) => ({
+      id: s.id,
+      name: s.name,
+      lat: s.lat || baseLat + (i - displayStops.length / 2) * 0.003,
+      lng: s.lng || baseLng + (i - displayStops.length / 2) * 0.002,
+      active: true,
+    }));
+  }, [displayStops]);
+
+  const mapRoute = useMemo(
+    () => mapStops.map((s) => ({ latitude: s.lat, longitude: s.lng })),
+    [mapStops]
+  );
 
   if (loading) return <Loader />;
   if (!route) return <EmptyState message="Route not found" />;
-
-  const displayStops =
-    route.stops && route.stops.length > 0 && route.stops[0].time ? route.stops : mockExtendedStops;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -92,45 +141,55 @@ export default function RouteDetail() {
               <Text style={styles.routeBadgeText}>{route.number}</Text>
             </View>
             <View style={styles.headerInfo}>
-              <Text style={styles.routeName}>{route.name}</Text>
-              <View style={styles.statusRow}>
-                <View style={styles.onTimePill}>
-                  <Text style={styles.onTimeText}>On Time</Text>
-                </View>
-                <View style={styles.crowdIndicator}>
-                  <Ionicons name="people-outline" size={14} color="#64748B" />
-                  <Text style={styles.crowdText}>Moderate crowd</Text>
-                </View>
+              <Text style={styles.routeName} numberOfLines={2}>
+                {route.origin && route.destination
+                  ? `${route.origin} → ${route.destination}`
+                  : route.name}
+              </Text>
+              <View style={styles.metaRow}>
+                <Ionicons name="location-outline" size={13} color={colors.gray500} />
+                <Text style={styles.metaText}>{displayStops.length} stops</Text>
+                {route.scheduleTimes?.length > 0 && (
+                  <>
+                    <View style={styles.metaDot} />
+                    <Ionicons name="time-outline" size={13} color={colors.gray500} />
+                    <Text style={styles.metaText}>{route.scheduleTimes.length} departures</Text>
+                  </>
+                )}
+                {route.source && (
+                  <>
+                    <View style={styles.metaDot} />
+                    <Text style={[styles.metaText, { textTransform: "uppercase" }]}>
+                      {route.source}
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
           </View>
 
-          {/* Live Tracking Visualizer */}
+          {/* Live Map Visualizer */}
           <View style={styles.visualizerContainer}>
             <View style={styles.visualizerMap}>
-              {/* Dotted background pattern simulation */}
-              <View style={styles.dottedBg} />
-
-              {/* Arc simulation */}
-              <View style={styles.arcContainer}>
-                <View style={styles.arcLine} />
-              </View>
-
-              {/* Bus Icon */}
-              <View style={styles.visualizerBus}>
-                <Ionicons name="bus" size={24} color="#10B981" />
-              </View>
-
-              {/* View Map Button */}
-              <TouchableOpacity style={styles.viewMapButton}>
-                <Ionicons
-                  name="navigate-outline"
-                  size={16}
-                  color="#0F172A"
-                  style={{ marginRight: 6 }}
+              {LiveMap ? (
+                <LiveMap
+                  initialRegion={{
+                    latitude: mapStops.length > 0 ? mapStops[0].lat : 11.0168,
+                    longitude: mapStops.length > 0 ? mapStops[0].lng : 76.9558,
+                    latitudeDelta: 0.04,
+                    longitudeDelta: 0.04,
+                  }}
+                  stops={mapStops}
+                  route={mapRoute}
+                  userLocation={userLocation}
+                  style={StyleSheet.absoluteFill}
                 />
-                <Text style={styles.viewMapText}>View Map</Text>
-              </TouchableOpacity>
+              ) : (
+                <View style={styles.mapFallback}>
+                  <Ionicons name="map-outline" size={32} color={palette.primary} />
+                  <Text style={styles.mapFallbackText}>Map loading...</Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.visualizerStatus}>
@@ -157,87 +216,98 @@ export default function RouteDetail() {
 
           {/* Route Stops Timeline */}
           <View style={styles.timelineSection}>
-            <Text style={styles.sectionTitle}>Route Stops</Text>
+            <Text style={styles.sectionTitle}>Route Stops ({displayStops.length})</Text>
 
-            <View style={styles.timeline}>
-              {displayStops.map((stop, index) => {
-                const isFirst = index === 0;
-                const isLast = index === displayStops.length - 1;
-                const isDeparted = stop.status === "departed";
+            {displayStops.length === 0 ? (
+              <EmptyState message="No stop information available" />
+            ) : (
+              <View style={styles.timeline}>
+                {displayStops.map((stop, index) => {
+                  const isFirst = index === 0;
+                  const isLast = index === displayStops.length - 1;
 
-                return (
-                  <View key={stop.id} style={styles.stopNode}>
-                    {/* Node and Line */}
-                    <View style={styles.timelineVisual}>
-                      {!isFirst && (
-                        <View
-                          style={[
-                            styles.timelineLine,
-                            isDeparted ? styles.lineDeparted : styles.lineUpcoming,
-                            { top: 0, bottom: "50%" },
-                          ]}
-                        />
-                      )}
-                      {!isLast && (
-                        <View
-                          style={[
-                            styles.timelineLine,
-                            isDeparted ? styles.lineDeparted : styles.lineUpcoming,
-                            { top: "50%", bottom: 0 },
-                          ]}
-                        />
-                      )}
-
-                      <View
-                        style={[
-                          styles.nodeCircle,
-                          isDeparted ? styles.nodeDeparted : styles.nodeUpcoming,
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.nodeInner,
-                            isDeparted ? styles.nodeInnerDeparted : styles.nodeInnerUpcoming,
-                          ]}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Content */}
-                    <View style={styles.stopContent}>
-                      <View style={styles.stopHeaderRow}>
-                        <View>
-                          <Text style={[styles.stopName, isDeparted && styles.textDeparted]}>
-                            {stop.name}
-                          </Text>
-                          <View style={styles.timeRow}>
-                            <Ionicons name="time-outline" size={14} color="#94A3B8" />
-                            <Text style={styles.stopTime}>{stop.time}</Text>
-                          </View>
-                        </View>
-
-                        {isDeparted ? (
-                          <Text style={styles.departedText}>Departed</Text>
-                        ) : (
-                          <Text style={styles.etaText}>{stop.eta}</Text>
+                  return (
+                    <View key={stop.id} style={styles.stopNode}>
+                      {/* Node and Line */}
+                      <View style={styles.timelineVisual}>
+                        {!isFirst && (
+                          <View
+                            style={[
+                              styles.timelineLine,
+                              styles.lineUpcoming,
+                              { top: 0, bottom: "50%" },
+                            ]}
+                          />
                         )}
+                        {!isLast && (
+                          <View
+                            style={[
+                              styles.timelineLine,
+                              styles.lineUpcoming,
+                              { top: "50%", bottom: 0 },
+                            ]}
+                          />
+                        )}
+                        <View
+                          style={[
+                            styles.nodeCircle,
+                            isFirst || isLast ? styles.nodeTerminal : styles.nodeUpcoming,
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.nodeInner,
+                              isFirst || isLast
+                                ? styles.nodeInnerTerminal
+                                : styles.nodeInnerUpcoming,
+                            ]}
+                          />
+                        </View>
                       </View>
 
-                      {stop.canConfirm && (
-                        <TouchableOpacity style={styles.confirmButton}>
-                          <Ionicons name="checkmark-circle-outline" size={14} color="#D97706" />
-                          <Text style={styles.confirmText}>Confirm Stop</Text>
-                          <View style={styles.pointsBadge}>
-                            <Text style={styles.pointsBadgeText}>+2</Text>
+                      {/* Content */}
+                      <View style={styles.stopContent}>
+                        <View style={styles.stopHeaderRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.stopName}>{stop.name}</Text>
+                            {(isFirst || isLast) && (
+                              <Text style={styles.terminalLabel}>
+                                {isFirst ? "Origin" : "Destination"}
+                              </Text>
+                            )}
                           </View>
-                        </TouchableOpacity>
-                      )}
+                          {(isFirst || isLast) && (
+                            <View style={styles.terminalBadge}>
+                              <Text style={styles.terminalBadgeText}>
+                                {isFirst ? "Start" : "End"}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
+
+          {/* Schedule Times */}
+          {route.scheduleTimes && route.scheduleTimes.length > 0 && (
+            <View style={styles.scheduleSection}>
+              <Text style={styles.sectionTitle}>
+                Schedule ({route.scheduleTimes.length} departures)
+              </Text>
+              <View style={styles.scheduleGrid}>
+                {route.scheduleTimes.map((t, i) => (
+                  <View key={i} style={styles.scheduleChip}>
+                    <Ionicons name="time-outline" size={12} color={palette.primary} />
+                    <Text style={styles.scheduleTime}>{t}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Report an Issue */}
           <View style={styles.reportSection}>
@@ -325,35 +395,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   routeName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
     color: colors.gray900,
-    marginBottom: 6,
+    marginBottom: 4,
+    lineHeight: 24,
   },
-  statusRow: {
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  onTimePill: {
-    backgroundColor: palette.success,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    marginRight: spacing.sm,
-  },
-  onTimeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  crowdIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     gap: 4,
+    marginTop: 4,
   },
-  crowdText: {
-    fontSize: 13,
+  metaText: {
+    fontSize: 12,
     color: colors.gray500,
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.gray300,
   },
   visualizerContainer: {
     borderTopWidth: 1,
@@ -363,63 +426,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   visualizerMap: {
-    height: 140,
+    height: 200,
     backgroundColor: colors.gray100,
     position: "relative",
     overflow: "hidden",
   },
-  dottedBg: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.5,
-    backgroundColor: colors.gray50,
-  },
-  arcContainer: {
-    ...StyleSheet.absoluteFillObject,
+  mapFallback: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
+    backgroundColor: "#E8F4F8",
   },
-  arcLine: {
-    width: "120%",
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: palette.primary,
-    borderStyle: "dashed",
-    position: "absolute",
-    top: 60,
-  },
-  visualizerBus: {
-    position: "absolute",
-    top: 50,
-    left: "50%",
-    marginLeft: -24,
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: palette.card,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: palette.success,
-    ...shadow.elevated,
-  },
-  viewMapButton: {
-    position: "absolute",
-    bottom: spacing.md,
-    right: spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: palette.card,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    ...shadow.card,
-  },
-  viewMapText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.gray900,
+  mapFallbackText: {
+    fontSize: 13,
+    color: palette.subtext,
+    marginTop: spacing.xs,
   },
   visualizerStatus: {
     flexDirection: "row",
@@ -485,7 +506,7 @@ const styles = StyleSheet.create({
   },
   stopNode: {
     flexDirection: "row",
-    minHeight: 80,
+    minHeight: 64,
   },
   timelineVisual: {
     width: 30,
@@ -497,9 +518,6 @@ const styles = StyleSheet.create({
     width: 2,
     left: "50%",
     marginLeft: -1,
-  },
-  lineDeparted: {
-    backgroundColor: colors.gray200,
   },
   lineUpcoming: {
     backgroundColor: colors.gray200,
@@ -513,31 +531,31 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     zIndex: 2,
   },
-  nodeDeparted: {
-    backgroundColor: colors.gray100,
+  nodeTerminal: {
+    backgroundColor: palette.primary,
     borderWidth: 3,
-    borderColor: colors.gray50,
+    borderColor: palette.primaryLight,
   },
-  nodeInnerDeparted: {
+  nodeInnerTerminal: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.gray400,
+    backgroundColor: "#FFFFFF",
   },
   nodeUpcoming: {
     backgroundColor: palette.card,
     borderWidth: 3,
-    borderColor: colors.gray100,
+    borderColor: colors.gray200,
   },
   nodeInnerUpcoming: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.gray500,
+    backgroundColor: colors.gray400,
   },
   stopContent: {
     flex: 1,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   stopHeaderRow: {
     flexDirection: "row",
@@ -545,61 +563,51 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   stopName: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.gray900,
+    marginBottom: 2,
+  },
+  terminalLabel: {
+    fontSize: 12,
+    color: palette.primary,
+    fontWeight: "600",
+  },
+  terminalBadge: {
+    backgroundColor: palette.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+  },
+  terminalBadgeText: {
+    fontSize: 11,
     fontWeight: "700",
-    color: colors.gray900,
-    marginBottom: 4,
+    color: palette.primaryDark,
   },
-  textDeparted: {
-    color: colors.gray900,
+  scheduleSection: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
   },
-  timeRow: {
+  scheduleGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  scheduleChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-  },
-  stopTime: {
-    fontSize: 13,
-    color: colors.gray500,
-  },
-  departedText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.gray400,
-  },
-  etaText: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: colors.gray900,
-  },
-  confirmButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1,
-    borderColor: "#FEF3C7",
+    backgroundColor: palette.primaryLight,
     borderRadius: radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginTop: spacing.md,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  confirmText: {
-    color: "#D97706",
-    fontWeight: "600",
+  scheduleTime: {
     fontSize: 13,
-    marginHorizontal: 6,
-  },
-  pointsBadge: {
-    backgroundColor: "#FDE68A",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-  },
-  pointsBadgeText: {
-    color: "#B45309",
-    fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "600",
+    color: palette.primaryDark,
   },
   reportSection: {
     padding: spacing.xl,

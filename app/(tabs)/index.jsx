@@ -1,19 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useRef, useState } from "react";
+import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NearbyBusesSheet } from "../../components/map";
 import { Sidebar } from "../../components/overlays";
+import { requestLocationPermission } from "../../config/permissions";
 import { colors, palette, shadow, spacing } from "../../design/tokens";
+import { usePoints } from "../../hooks/usePoints";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Conditionally require map to prevent Expo Go / Web crashes
 let LiveMap;
@@ -39,7 +36,64 @@ function MapPlaceholder() {
 
 export default function TabsHome() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { points } = usePoints();
   const [isSidebarVisible, setSidebarVisible] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const locationSubRef = useRef(null);
+
+  // Request location permission on mount and start watching position
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const granted = await requestLocationPermission();
+      if (!granted || cancelled) return;
+
+      // Get initial position quickly
+      try {
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!cancelled) {
+          setUserLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        }
+      } catch (_e) {
+        // silent – will retry via watcher
+      }
+
+      // Watch for continuous updates
+      try {
+        locationSubRef.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5000,
+            distanceInterval: 10,
+          },
+          (pos) => {
+            if (!cancelled) {
+              setUserLocation({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+              });
+            }
+          }
+        );
+      } catch (_e) {
+        // silent – watcher failed
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      locationSubRef.current?.remove();
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -47,11 +101,18 @@ export default function TabsHome() {
 
       {/* The Map takes the entire background */}
       <View style={styles.mapWrap}>
-        {LiveMap ? <LiveMap style={StyleSheet.absoluteFill} /> : <MapPlaceholder />}
+        {LiveMap ? (
+          <LiveMap style={StyleSheet.absoluteFill} userLocation={userLocation} />
+        ) : (
+          <MapPlaceholder />
+        )}
       </View>
 
       {/* Top Bar Overlays */}
-      <SafeAreaView style={styles.overlaySafeArea} pointerEvents="box-none">
+      <SafeAreaView
+        style={[styles.overlaySafeArea, { paddingTop: insets.top + 8 }]}
+        pointerEvents="box-none"
+      >
         <View style={styles.topBar} pointerEvents="box-none">
           {/* Menu Button */}
           <TouchableOpacity
@@ -63,15 +124,14 @@ export default function TabsHome() {
           </TouchableOpacity>
 
           {/* Search Bar */}
-          <View style={styles.searchContainer}>
+          <TouchableOpacity
+            style={styles.searchContainer}
+            activeOpacity={0.8}
+            onPress={() => router.push("/viewer/search")}
+          >
             <Ionicons name="search" size={18} color={colors.gray400} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search stops, routes..."
-              placeholderTextColor={colors.gray400}
-              editable={false}
-            />
-          </View>
+            <Text style={styles.searchPlaceholder}>Search stops, routes...</Text>
+          </TouchableOpacity>
 
           {/* Points Pill */}
           <View style={styles.pointsPill}>
@@ -79,37 +139,43 @@ export default function TabsHome() {
               <Text style={styles.pointsCoinText}>🪙</Text>
             </View>
             <View>
-              <Text style={styles.pointsValue}>320</Text>
+              <Text style={styles.pointsValue}>{points}</Text>
               <Text style={styles.pointsLabel}>pts</Text>
             </View>
           </View>
         </View>
 
-        {/* My Location FAB */}
-        <View style={styles.fabContainer} pointerEvents="box-none">
+        {/* My Location FAB + I'm on a bus row */}
+        <View style={styles.secondRow} pointerEvents="box-none">
+          <TouchableOpacity
+            style={styles.imOnABusButton}
+            activeOpacity={0.85}
+            onPress={() => router.push("/modals/im-on-bus")}
+          >
+            <View style={styles.busBtnIcon}>
+              <Ionicons name="bus" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.imOnABusText}>{"I'm on a bus"}</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.locationFab} activeOpacity={0.8}>
             <Ionicons name="locate" size={22} color={palette.primary} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
-      {/* Bottom Sheet */}
-      <NearbyBusesSheet />
-
-      {/* Floating "I'm on a bus" Button */}
-      <View style={styles.floatingActionContainer} pointerEvents="box-none">
-        <TouchableOpacity
-          style={styles.imOnABusButton}
-          activeOpacity={0.85}
-          onPress={() => router.push("/modals/im-on-bus")}
-        >
-          <View style={styles.busBtnIcon}>
-            <Ionicons name="bus" size={20} color="#FFFFFF" />
-          </View>
-          <Text style={styles.imOnABusText}>{"I'm on a bus"}</Text>
-          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+      {/* Refresh Button – just above the sheet, right-aligned */}
+      <View
+        style={[styles.refreshRow, { bottom: SCREEN_HEIGHT * 0.3 + 12 + insets.bottom }]}
+        pointerEvents="box-none"
+      >
+        <TouchableOpacity style={styles.refreshFab} activeOpacity={0.8}>
+          <Ionicons name="refresh" size={20} color={palette.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* Bottom Sheet */}
+      <NearbyBusesSheet />
 
       {/* Sidebar Component */}
       <Sidebar
@@ -155,7 +221,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   overlaySafeArea: {
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 8 : 0,
     position: "absolute",
     top: 0,
     left: 0,
@@ -187,11 +252,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     ...shadow.card,
   },
-  searchInput: {
+  searchPlaceholder: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
-    color: colors.text,
+    color: colors.gray400,
   },
   pointsPill: {
     height: 46,
@@ -226,55 +291,62 @@ const styles = StyleSheet.create({
     color: colors.gray500,
     fontWeight: "500",
   },
-  fabContainer: {
-    alignItems: "flex-end",
+  secondRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.xl,
+    marginTop: spacing.sm,
   },
   locationFab: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: palette.card,
     justifyContent: "center",
     alignItems: "center",
     ...shadow.elevated,
   },
-  floatingActionContainer: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 100 : 80,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 20,
-  },
   imOnABusButton: {
     backgroundColor: palette.primary,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingLeft: 6,
-    paddingRight: 20,
-    borderRadius: 28,
+    paddingRight: 16,
+    borderRadius: 23,
     shadowColor: palette.primaryDark,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   busBtnIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 8,
   },
   imOnABusText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700",
-    marginRight: 4,
+  },
+  refreshRow: {
+    position: "absolute",
+    right: spacing.lg,
+    zIndex: 9,
+  },
+  refreshFab: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: palette.card,
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadow.card,
   },
 });
