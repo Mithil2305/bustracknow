@@ -1,82 +1,193 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function userDocPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
     }
 
-    // Users are readable to signed-in clients for leaderboard/trust views,
-    // but only owners can create/update themselves.
+    function hasUserDoc(uid) {
+      return exists(userDocPath(uid));
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function requesterNotBanned() {
+      return isSignedIn()
+        && (!hasUserDoc(request.auth.uid)
+            || get(userDocPath(request.auth.uid)).data.isBanned != true);
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          request.auth.token.admin == true
+          || request.auth.token.role == 'admin'
+          || (hasUserDoc(request.auth.uid)
+              && get(userDocPath(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function isValidAlertType(t) {
+      return ['full', 'late', 'not-running'].hasAny([t]);
+    }
+
+    function validLatLng(loc) {
+      return loc is map
+        && loc.lat is number
+        && loc.lng is number
+        && loc.lat >= -90 && loc.lat <= 90
+        && loc.lng >= -180 && loc.lng <= 180;
+    }
+
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && requesterNotBanned();
 
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSelf(userId)
+        && requesterNotBanned()
+        && (request.resource.data.uid == null || request.resource.data.uid == userId)
+        && (request.resource.data.role == null || request.resource.data.role == 'viewer')
+        && (request.resource.data.isBanned == null || request.resource.data.isBanned == false);
 
-      allow update: if isSignedIn()
-        && request.auth.uid == userId
-        && (!request.resource.data.keys().hasAny(['isBanned'])
-            || request.resource.data.isBanned == resource.data.isBanned)
-        && !resource.data.isBanned;
+      allow update: if isAdmin()
+        || (
+          isSelf(userId)
+          && requesterNotBanned()
+          && resource.data.isBanned != true
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.isBanned == resource.data.isBanned
+          && request.resource.data.trustScore == resource.data.trustScore
+          && (request.resource.data.uid == resource.data.uid || request.resource.data.uid == null)
+        );
 
       allow delete: if isAdmin();
     }
 
     match /routes/{routeId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     match /stops/{stopId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /global/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /meta/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /alerts/{alertId} {
       allow read: if true;
 
       allow create: if isSignedIn()
-        && request.resource.data.keys().hasAll(['routeId', 'type', 'contributorId', 'location', 'timestamp'])
-        && ['full', 'late', 'not-running'].hasAny([request.resource.data.type])
-        && request.resource.data.location.lat is number
-        && request.resource.data.location.lng is number
+        && requesterNotBanned()
+        && request.resource.data.keys().hasAll([
+          'routeId',
+          'type',
+          'contributorId',
+          'location',
+          'timestamp',
+          'upvotes'
+        ])
         && request.resource.data.contributorId == request.auth.uid
-        && request.resource.data.timestamp > (request.time - duration.value(5, 'minutes'))
-        && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBanned;
+        && isValidAlertType(request.resource.data.type)
+        && validLatLng(request.resource.data.location)
+        && request.resource.data.upvotes is int
+        && request.resource.data.upvotes == 0
+        && request.resource.data.timestamp >= (request.time - duration.value(10, 'minutes'))
+        && request.resource.data.timestamp <= (request.time + duration.value(1, 'minutes'));
 
-      allow update: if isSignedIn() && request.resource.data.upvotes > resource.data.upvotes;
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && requesterNotBanned()
+          && request.auth.uid != resource.data.contributorId
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'upvotes',
+            'upvotedBy',
+            'updatedAt'
+          ])
+          && request.resource.data.routeId == resource.data.routeId
+          && request.resource.data.type == resource.data.type
+          && request.resource.data.contributorId == resource.data.contributorId
+          && request.resource.data.location == resource.data.location
+          && request.resource.data.timestamp == resource.data.timestamp
+          && request.resource.data.upvotes is int
+          && request.resource.data.upvotes >= 0
+          && request.resource.data.upvotes >= (resource.data.upvotes - 1)
+          && request.resource.data.upvotes <= (resource.data.upvotes + 1)
+          && (!request.resource.data.keys().hasAny(['upvotedBy'])
+              || request.resource.data.upvotedBy is list)
+        );
+
       allow delete: if isAdmin();
     }
 
     match /points_transactions/{transactionId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn()
+        && requesterNotBanned()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn()
+        && requesterNotBanned()
+        && (
+          isAdmin()
+          || (
+            request.resource.data.userId == request.auth.uid
+            && request.resource.data.points is number
+            && request.resource.data.type is string
+          )
+        );
+
       allow update, delete: if false;
     }
 
     match /redemptions/{requestId} {
       allow read: if isSignedIn()
-        && (request.auth.uid == resource.data.userId || isAdmin());
+        && requesterNotBanned()
+        && (resource.data.userId == request.auth.uid || isAdmin());
 
       allow create: if isSignedIn()
+        && requesterNotBanned()
         && request.resource.data.userId == request.auth.uid
+        && request.resource.data.pointsUsed is number
         && request.resource.data.pointsUsed >= 10000
+        && request.resource.data.amount is number
         && request.resource.data.amount >= 100
-        && resource == null;
+        && request.resource.data.upiId is string
+        && request.resource.data.upiId.size() >= 3
+        && request.resource.data.status == 'pending';
 
       allow update: if isAdmin()
-        && request.resource.data.status in ['pending', 'processing', 'completed', 'failed'];
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.status in [
+          'pending',
+          'processing',
+          'approved',
+          'completed',
+          'failed',
+          'rejected'
+        ];
 
       allow delete: if false;
     }
 
-    match /meta/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
