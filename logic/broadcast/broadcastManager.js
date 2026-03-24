@@ -3,13 +3,13 @@ import { ref, remove, set } from "firebase/database";
 import { NativeEventEmitter, NativeModules } from "react-native";
 import { getRoutePolyline } from "../../hooks/useCachedRoutes";
 import { rtdb } from "../../services/firebase/firebaseConfig";
-import { detectSpoofing, isOnRoute } from "../geo/spoofingDetector";
+import { detectSpoofing, getRouteMatch } from "../geo/spoofingDetector";
 import { awardPoints } from "../points/calculationEngine";
 
 const { RNAndroidLocationEnabler } = NativeModules;
 const motionEmitter = new NativeEventEmitter(NativeModules.RNMotionDetector);
 
-class BroadcastManager {
+export class BroadcastManager {
   constructor() {
     this.broadcastInterval = null;
     this.motionSubscription = null;
@@ -20,6 +20,8 @@ class BroadcastManager {
     this.tripMinutes = 0;
     this.pointsAwarded = 0;
     this.isBroadcasting = false;
+    this.startInFlight = false;
+    this.stopInFlight = false;
   }
 
   /**
@@ -31,7 +33,12 @@ class BroadcastManager {
    * @returns {Promise<boolean>} Success status
    */
   async startBroadcast(userId, routeId, onLocationUpdate = () => {}) {
-    if (this.isBroadcasting) return false;
+    if (this.startInFlight) return false;
+    this.startInFlight = true;
+
+    if (this.isBroadcasting) {
+      await this.stopBroadcast(userId, this.routeId || routeId);
+    }
 
     try {
       // ✅ Step 1: Validate route exists and get polyline
@@ -57,11 +64,11 @@ class BroadcastManager {
       this.pointsAwarded = 0;
 
       // ✅ Step 4: Start motion monitoring (auto-stop when user exits bus)
-      this.motionSubscription = motionEmitter.addListener("motionChanged", (motionState) => {
+      this.motionSubscription = motionEmitter.addListener("motionChanged", async (motionState) => {
         // If stationary for >60s while previously moving, auto-stop broadcast
         if (motionState.isMoving === false && motionState.stationaryDuration > 60000) {
           console.log("🚶 Auto-stopping broadcast: user exited bus (stationary >60s)");
-          this.stopBroadcast(userId, routeId);
+          await this.stopBroadcast(userId, routeId);
         }
       });
 
@@ -71,32 +78,44 @@ class BroadcastManager {
           const location = await this.getCurrentLocation();
           if (!location) return;
 
+          const speedKmh = location.coords.speed ? location.coords.speed * 3.6 : 0;
+          const current = {
+            lat: location.coords.latitude,
+            lng: location.coords.longitude,
+            timestamp: Date.now(),
+            speed: speedKmh,
+            accuracy: location.coords.accuracy,
+          };
+
           // ✅ Spoofing detection (critical security)
-          const spoofCheck = detectSpoofing(location, this.lastLocation);
+          const spoofCheck = detectSpoofing(current, this.lastLocation);
           if (spoofCheck.isSpoofed) {
             console.warn(`🚨 Spoofing detected: ${spoofCheck.reason}. Stopping broadcast.`);
-            this.stopBroadcast(userId, routeId);
+            await this.stopBroadcast(userId, routeId);
             return;
           }
 
-          // ✅ Route validation (50m geofencing)
-          if (!isOnRoute(location, polyline)) {
-            console.warn("📍 User off route (>50m). Stopping broadcast.");
-            this.stopBroadcast(userId, routeId);
-            return;
+          // ✅ Route validation (50m geofencing) with graceful fallback for GPS drift
+          const routeMatch = getRouteMatch(current, polyline, 50);
+          if (!routeMatch.onRoute) {
+            console.warn(
+              `📍 GPS drift detected (distance ${Math.round(routeMatch.distanceFromRoute)}m). Marking low confidence.`
+            );
           }
 
           // ✅ Write to RTDB with TTL enforcement (5 minutes)
           const sessionRef = ref(rtdb, `active_buses/${routeId}/${this.sessionId}`);
           await set(sessionRef, {
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-            speed: location.coords.speed ? location.coords.speed * 3.6 : 0, // m/s → km/h
+            lat: current.lat,
+            lng: current.lng,
+            speed: speedKmh, // m/s → km/h
             heading: location.coords.heading || 0,
             accuracy: location.coords.accuracy,
             contributor_id: userId,
-            timestamp: Date.now(),
+            timestamp: current.timestamp,
             startedAt: this.startTime,
+            route_confidence: routeMatch.onRoute ? "high" : "low",
+            distance_from_route_m: Math.round(routeMatch.distanceFromRoute),
           });
 
           // ✅ Award points every 60 seconds (max 30 points/trip)
@@ -114,20 +133,17 @@ class BroadcastManager {
 
           // ✅ Update UI
           onLocationUpdate({
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-            speed: location.coords.speed ? location.coords.speed * 3.6 : 0,
+            lat: current.lat,
+            lng: current.lng,
+            speed: speedKmh,
             accuracy: location.coords.accuracy,
             tripMinutes: this.tripMinutes,
             pointsEarned: this.pointsAwarded,
+            routeConfidence: routeMatch.onRoute ? "high" : "low",
+            driftDistanceM: Math.round(routeMatch.distanceFromRoute),
           });
 
-          this.lastLocation = {
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-            timestamp: Date.now(),
-            speed: location.coords.speed ? location.coords.speed * 3.6 : 0,
-          };
+          this.lastLocation = current;
         } catch (error) {
           console.error("Broadcast interval error:", error);
           // Don't stop broadcast on transient errors (network issues)
@@ -138,8 +154,10 @@ class BroadcastManager {
       return true;
     } catch (error) {
       console.error("❌ Broadcast start failed:", error);
-      this.stopBroadcast(userId, routeId);
+      await this.stopBroadcast(userId, routeId);
       throw error;
+    } finally {
+      this.startInFlight = false;
     }
   }
 
@@ -150,16 +168,24 @@ class BroadcastManager {
    * @param {string} routeId
    */
   async stopBroadcast(userId, routeId) {
-    if (!this.isBroadcasting) return;
+    if (!this.isBroadcasting || this.stopInFlight) return;
+    this.stopInFlight = true;
 
     try {
       // ✅ Clear intervals/subscriptions
-      if (this.broadcastInterval) clearInterval(this.broadcastInterval);
-      if (this.motionSubscription) this.motionSubscription.remove();
+      if (this.broadcastInterval) {
+        clearInterval(this.broadcastInterval);
+        this.broadcastInterval = null;
+      }
+      if (this.motionSubscription) {
+        this.motionSubscription.remove();
+        this.motionSubscription = null;
+      }
 
       // ✅ Remove RTDB entry (TTL would expire it anyway, but cleanup is polite)
       if (this.sessionId) {
-        const sessionRef = ref(rtdb, `active_buses/${routeId}/${this.sessionId}`);
+        const safeRouteId = this.routeId || routeId;
+        const sessionRef = ref(rtdb, `active_buses/${safeRouteId}/${this.sessionId}`);
         await remove(sessionRef);
       }
 
@@ -177,20 +203,24 @@ class BroadcastManager {
         }
       }
 
-      // ✅ Reset state
-      this.isBroadcasting = false;
-      this.sessionId = null;
-      this.routeId = null;
-      this.startTime = null;
-      this.lastLocation = null;
-      this.tripMinutes = 0;
-      this.pointsAwarded = 0;
-
-      console.log(`⏹️ Broadcast stopped for route ${routeId}`);
+      console.log(`⏹️ Broadcast stopped for route ${this.routeId || routeId}`);
     } catch (error) {
       console.error("Broadcast stop error:", error);
       // Non-critical - RTDB TTL will clean up stale entries
+    } finally {
+      this.resetState();
+      this.stopInFlight = false;
     }
+  }
+
+  resetState() {
+    this.isBroadcasting = false;
+    this.sessionId = null;
+    this.routeId = null;
+    this.startTime = null;
+    this.lastLocation = null;
+    this.tripMinutes = 0;
+    this.pointsAwarded = 0;
   }
 
   // Helper: Get current location with timeout

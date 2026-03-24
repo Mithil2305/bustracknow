@@ -1,112 +1,130 @@
-import { StyleSheet, View } from "react-native";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { radius, shadow, spacing } from "../../design/tokens";
 
-// Import react-leaflet components
-import { MapContainer, Marker, Polyline, TileLayer } from 'react-leaflet';
-// Import Leaflet CSS is handled in index.html/global styles or below
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import ReactDOMServer from 'react-dom/server';
-import BusMarker from "./BusMarker";
-import StopMarker from "./StopMarker";
+function toBbox(region) {
+  const lat = region?.latitude ?? 11.0168;
+  const lng = region?.longitude ?? 76.9558;
+  const latDelta = Math.max(region?.latitudeDelta ?? 0.05, 0.01);
+  const lngDelta = Math.max(region?.longitudeDelta ?? 0.05, 0.01);
 
-// Create custom leaflet icons resolving from React Native Web SVG components
-const createLeafletIcon = (ReactComponent, options = {}) => {
-  const htmlArgs = ReactDOMServer.renderToString(ReactComponent);
-  
-  return L.divIcon({
-    html: htmlArgs,
-    className: 'custom-leaflet-marker',
-    iconSize: options.size || [30, 30],
-    iconAnchor: options.anchor || [15, 15],
-  });
-};
+  const south = lat - latDelta;
+  const north = lat + latDelta;
+  const west = lng - lngDelta;
+  const east = lng + lngDelta;
+
+  return { south, north, west, east, lat, lng };
+}
 
 export default function LiveMap({
-	initialRegion = {
-		latitude: 37.7749,
-		longitude: -122.4194,
-		latitudeDelta: 0.05,
-		longitudeDelta: 0.05,
-	},
-	buses = [],
-	stops = [],
-	route = [],
-	onBusPress,
-	onStopPress,
-	style,
-	children,
+  initialRegion = {
+    latitude: 11.0168,
+    longitude: 76.9558,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  },
+  buses = [],
+  stops = [],
+  onBusPress,
+  onStopPress,
+  style,
+  children,
 }) {
+  const { south, north, west, east, lat, lng } = useMemo(
+    () => toBbox(initialRegion),
+    [initialRegion]
+  );
 
-	return (
-		<View style={[styles.card, style]}>
-			<MapContainer
-                center={[initialRegion.latitude, initialRegion.longitude]} 
-                zoom={13} 
-                zoomControl={false}
-                style={{ height: '100%', width: '100%', zIndex: 0 }}
-            >
-                {/* OpenStreetMap Tile Layer */}
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+  const mapUrl = useMemo(() => {
+    const bbox = [west, south, east, north].join(",");
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(
+      bbox
+    )}&layer=mapnik&marker=${encodeURIComponent(`${lat},${lng}`)}`;
+  }, [east, lat, lng, north, south, west]);
 
-                {/* Route Polyline */}
-                {route.length > 0 && (
-                    <Polyline 
-                        positions={route.map(pt => [pt.latitude, pt.longitude])} 
-                        color="#0C8B99" 
-                        weight={4}
-                    />
-                )}
+  return (
+    <View style={[styles.card, style]}>
+      <iframe title="Live map" src={mapUrl} style={styles.iframe} loading="lazy" />
 
-                {/* Stop Markers */}
-                {stops.map((s) => (
-                    <Marker 
-                        key={`stop-${s.id}`} 
-                        position={[s.lat, s.lng]}
-                        icon={createLeafletIcon(<StopMarker name={s.name} upcoming={s.upcoming} active={s.active} />, { size: [24, 24], anchor: [12, 12] })}
-                        eventHandlers={{ click: () => onStopPress?.(s) }}
-                    />
-                ))}
+      <View style={styles.panel}>
+        <Text style={styles.title}>Live buses</Text>
+        {buses.slice(0, 5).map((bus) => (
+          <Pressable key={`bus-${bus.id}`} onPress={() => onBusPress?.(bus)} style={styles.row}>
+            <Text style={styles.rowLabel}>{bus.label || bus.id}</Text>
+            <Text style={styles.rowMeta}>{bus.eta || "Live"}</Text>
+          </Pressable>
+        ))}
 
-                {/* Bus Markers */}
-                {buses.map((b) => (
-                    <Marker 
-                        key={`bus-${b.id}`} 
-                        position={[b.lat, b.lng]}
-                        // Leaflet doesn't natively rotate markers easily without plugins, creating a wrapped div icon
-                        icon={L.divIcon({
-                            html: `<div style="transform: rotate(${b.heading ?? 0}deg);">${ReactDOMServer.renderToString(
-                                <BusMarker label={b.label} eta={b.eta} crowd={b.crowd} active={b.active} />
-                            )}</div>`,
-                            className: 'custom-bus-marker',
-                            iconSize: [40, 40],
-                            iconAnchor: [20, 20],
-                        })}
-                        eventHandlers={{ click: () => onBusPress?.(b) }}
-                    />
-                ))}
-            </MapContainer>
-			{children ? <View style={styles.overlay}>{children}</View> : null}
-		</View>
-	);
+        <Text style={[styles.title, { marginTop: 10 }]}>Stops</Text>
+        {stops.slice(0, 5).map((stop) => (
+          <Pressable key={`stop-${stop.id}`} onPress={() => onStopPress?.(stop)} style={styles.row}>
+            <Text style={styles.rowLabel}>{stop.name || stop.id}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {children ? <View style={styles.overlay}>{children}</View> : null}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: radius.xl,
-		overflow: "hidden",
-		backgroundColor: "#E5ECFF",
-		minHeight: 320,
-		...shadow.card,
-	},
-	overlay: {
-		position: "absolute",
-		top: spacing.lg,
-		left: spacing.lg,
-		right: spacing.lg,
-        zIndex: 1000, // Important on web to sit above the leafet pane
-	},
+  card: {
+    borderRadius: radius.xl,
+    overflow: "hidden",
+    backgroundColor: "#E5ECFF",
+    minHeight: 320,
+    position: "relative",
+    ...shadow.card,
+  },
+  iframe: {
+    width: "100%",
+    height: "100%",
+    borderWidth: 0,
+    minHeight: 320,
+  },
+  panel: {
+    position: "absolute",
+    right: spacing.md,
+    top: spacing.md,
+    width: 210,
+    maxHeight: 260,
+    overflow: "hidden",
+    borderRadius: radius.lg,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  title: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  row: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    backgroundColor: "#EEF4FF",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rowLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0B3D5C",
+    flexShrink: 1,
+  },
+  rowMeta: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0A7F86",
+    marginLeft: spacing.sm,
+  },
+  overlay: {
+    position: "absolute",
+    top: spacing.lg,
+    left: spacing.lg,
+    right: spacing.lg,
+  },
 });

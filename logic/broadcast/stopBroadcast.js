@@ -1,5 +1,9 @@
+import { clearBroadcastIntervalRef, getBroadcastIntervalRef } from "./startBroadcast";
+
 export function stopBroadcast() {
-	if (globalThis.clearInterval && globalThis.intervalRef) {
-		clearInterval(globalThis.intervalRef);
-	}
+  const intervalRef = getBroadcastIntervalRef();
+  if (!intervalRef) return;
+
+  clearInterval(intervalRef);
+  clearBroadcastIntervalRef();
 }

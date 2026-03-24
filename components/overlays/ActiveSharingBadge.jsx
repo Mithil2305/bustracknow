@@ -1,19 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { Animated, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Text, TouchableOpacity, View } from "react-native";
 
-const ActiveSharingBadge = ({ 
-  tripMinutes = 0, 
-  pointsEarned = 0, 
-  onStopSharing, 
-  batteryLevel 
-}) => {
-  const [pulseAnim] = useState(new Animated.Value(1));
+const ActiveSharingBadge = ({ tripMinutes = 0, pointsEarned = 0, onStopSharing, batteryLevel }) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   const [showBatteryWarning, setShowBatteryWarning] = useState(false);
 
   useEffect(() => {
     // Pulse animation for the badge
-    Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.1,
@@ -26,17 +21,19 @@ const ActiveSharingBadge = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
-
-    // Show battery warning if low
-    if (batteryLevel && batteryLevel < 15) {
-      setShowBatteryWarning(true);
-    }
+    );
+    pulseLoop.start();
 
     return () => {
+      pulseLoop.stop();
+      pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
     };
-  }, []);
+  }, [pulseAnim]);
+
+  useEffect(() => {
+    setShowBatteryWarning(Boolean(batteryLevel && batteryLevel < 15));
+  }, [batteryLevel]);
 
   const pulseScale = {
     transform: [{ scale: pulseAnim }],

@@ -8,50 +8,50 @@ import { haversineDistance } from "./distanceCalculator";
  * @returns {Object} { isSpoofed: boolean, reason: string }
  */
 export const detectSpoofing = (current, previous) => {
-	// Rule 1: Impossible speed (>120 km/h for city buses)
-	if (current.speed > 120) {
-		return {
-			isSpoofed: true,
-			reason: `Impossible speed: ${current.speed.toFixed(1)} km/h`,
-		};
-	}
+  // Rule 1: Impossible speed (>120 km/h for city buses)
+  if (current.speed > 120) {
+    return {
+      isSpoofed: true,
+      reason: `Impossible speed: ${current.speed.toFixed(1)} km/h`,
+    };
+  }
 
-	// Rule 2: Teleportation (location jump >500m in <3s)
-	if (previous && current.timestamp && previous.timestamp) {
-		const timeDiffMs = current.timestamp - previous.timestamp;
-		const distanceM = haversineDistance(
-			{ lat: previous.lat, lng: previous.lng },
-			{ lat: current.lat, lng: current.lng },
-		);
+  // Rule 2: Teleportation (location jump >500m in <3s)
+  if (previous && current.timestamp && previous.timestamp) {
+    const timeDiffMs = current.timestamp - previous.timestamp;
+    const distanceM = haversineDistance(
+      { lat: previous.lat, lng: previous.lng },
+      { lat: current.lat, lng: current.lng }
+    );
 
-		if (timeDiffMs < 3000 && distanceM > 500) {
-			return {
-				isSpoofed: true,
-				reason: `Teleportation: ${distanceM.toFixed(0)}m in ${timeDiffMs}ms`,
-			};
-		}
+    if (timeDiffMs < 3000 && distanceM > 500) {
+      return {
+        isSpoofed: true,
+        reason: `Teleportation: ${distanceM.toFixed(0)}m in ${timeDiffMs}ms`,
+      };
+    }
 
-		// Rule 3: Speed anomaly (calculated vs reported)
-		if (timeDiffMs > 1000) {
-			const calcSpeed = (distanceM / (timeDiffMs / 1000)) * 3.6;
-			if (Math.abs(calcSpeed - current.speed) > 30 && calcSpeed > 5) {
-				return {
-					isSpoofed: true,
-					reason: `Speed mismatch: reported ${current.speed.toFixed(1)} vs calc ${calcSpeed.toFixed(1)} km/h`,
-				};
-			}
-		}
-	}
+    // Rule 3: Speed anomaly (calculated vs reported)
+    if (timeDiffMs > 1000) {
+      const calcSpeed = (distanceM / (timeDiffMs / 1000)) * 3.6;
+      if (Math.abs(calcSpeed - current.speed) > 30 && calcSpeed > 5) {
+        return {
+          isSpoofed: true,
+          reason: `Speed mismatch: reported ${current.speed.toFixed(1)} vs calc ${calcSpeed.toFixed(1)} km/h`,
+        };
+      }
+    }
+  }
 
-	// Rule 4: Poor accuracy + high speed combo
-	if (current.accuracy > 100 && current.speed > 30) {
-		return {
-			isSpoofed: true,
-			reason: `Low accuracy (${current.accuracy.toFixed(0)}m) with high speed`,
-		};
-	}
+  // Rule 4: Poor accuracy + high speed combo
+  if (current.accuracy > 100 && current.speed > 30) {
+    return {
+      isSpoofed: true,
+      reason: `Low accuracy (${current.accuracy.toFixed(0)}m) with high speed`,
+    };
+  }
 
-	return { isSpoofed: false, reason: null };
+  return { isSpoofed: false, reason: null };
 };
 
 /**
@@ -61,41 +61,57 @@ export const detectSpoofing = (current, previous) => {
  * @returns {boolean}
  */
 export const isOnRoute = (location, polyline, maxDistanceM = 50) => {
-	if (!polyline || polyline.length < 2) return false;
+  const result = getRouteMatch(location, polyline, maxDistanceM);
+  return result.onRoute;
+};
 
-	let minDistance = Infinity;
-	for (let i = 0; i < polyline.length - 1; i++) {
-		const dist = distanceToSegment(location, polyline[i], polyline[i + 1]);
-		minDistance = Math.min(minDistance, dist);
-		if (minDistance <= maxDistanceM) return true;
-	}
-	return minDistance <= maxDistanceM;
+/**
+ * Route match diagnostics for graceful drift handling.
+ * @returns {{ onRoute: boolean, distanceFromRoute: number }}
+ */
+export const getRouteMatch = (location, polyline, maxDistanceM = 50) => {
+  if (!polyline || polyline.length < 2) {
+    return { onRoute: false, distanceFromRoute: Infinity };
+  }
+
+  let minDistance = Infinity;
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const dist = distanceToSegment(location, polyline[i], polyline[i + 1]);
+    minDistance = Math.min(minDistance, dist);
+    if (minDistance <= maxDistanceM) {
+      return { onRoute: true, distanceFromRoute: minDistance };
+    }
+  }
+  return {
+    onRoute: minDistance <= maxDistanceM,
+    distanceFromRoute: minDistance,
+  };
 };
 
 // Helper: Distance from point to line segment (meters)
 const distanceToSegment = (p, a, b) => {
-	const A = p.lat - a.lat;
-	const B = p.lng - a.lng;
-	const C = b.lat - a.lat;
-	const D = b.lng - a.lng;
+  const A = p.lat - a.lat;
+  const B = p.lng - a.lng;
+  const C = b.lat - a.lat;
+  const D = b.lng - a.lng;
 
-	const dot = A * C + B * D;
-	const lenSq = C * C + D * D;
-	const param = lenSq !== 0 ? dot / lenSq : -1;
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  const param = lenSq !== 0 ? dot / lenSq : -1;
 
-	let xx, yy;
-	if (param < 0) {
-		xx = a.lat;
-		yy = a.lng;
-	} else if (param > 1) {
-		xx = b.lat;
-		yy = b.lng;
-	} else {
-		xx = a.lat + param * C;
-		yy = a.lng + param * D;
-	}
+  let xx, yy;
+  if (param < 0) {
+    xx = a.lat;
+    yy = a.lng;
+  } else if (param > 1) {
+    xx = b.lat;
+    yy = b.lng;
+  } else {
+    xx = a.lat + param * C;
+    yy = a.lng + param * D;
+  }
 
-	const dx = p.lat - xx;
-	const dy = p.lng - yy;
-	return Math.sqrt(dx * dx + dy * dy) * 111000; // Degrees to meters
+  const dx = p.lat - xx;
+  const dy = p.lng - yy;
+  return Math.sqrt(dx * dx + dy * dy) * 111000; // Degrees to meters
 };

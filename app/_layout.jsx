@@ -8,10 +8,55 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { LogBox, Text, TextInput, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../hooks/useAuth";
+
+class RootErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMessage: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || "An unexpected error occurred.",
+    };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("[RootErrorBoundary]", error, info);
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, errorMessage: "" });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
+          <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 8, textAlign: "center" }}>
+            Something went wrong
+          </Text>
+          <Text style={{ fontSize: 14, opacity: 0.75, textAlign: "center", marginBottom: 18 }}>
+            {this.state.errorMessage}
+          </Text>
+          <Text
+            onPress={this.handleRetry}
+            style={{ fontSize: 14, fontWeight: "700", color: "#1D4ED8" }}
+          >
+            Try Again
+          </Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Apply Google Sans Flex as the default font for ALL Text and TextInput components
 const defaultFontFamily = "GoogleSansFlex-Regular";
@@ -85,25 +130,27 @@ export default function Layout() {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="admin" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="viewer" />
-            <Stack.Screen
-              name="modals"
-              options={{
-                presentation: "modal",
-                animation: "slide_from_bottom",
-              }}
-            />
-            <Stack.Screen name="splash" />
-            <Stack.Screen name="index" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </AuthProvider>
+        <RootErrorBoundary>
+          <AuthProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="admin" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="viewer" />
+              <Stack.Screen
+                name="modals"
+                options={{
+                  presentation: "modal",
+                  animation: "slide_from_bottom",
+                }}
+              />
+              <Stack.Screen name="splash" />
+              <Stack.Screen name="index" />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </AuthProvider>
+        </RootErrorBoundary>
       </SafeAreaProvider>
     </View>
   );

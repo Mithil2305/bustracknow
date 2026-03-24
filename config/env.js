@@ -15,6 +15,21 @@ const env = {
   FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "",
   FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL || "",
 
+  // ── Cloudflare R2 ─────────────────────────────────────────────
+  R2_ENDPOINT:
+    process.env.EXPO_PUBLIC_R2_ENDPOINT ||
+    (process.env.EXPO_PUBLIC_CF_ACCOUNT_ID
+      ? `https://${process.env.EXPO_PUBLIC_CF_ACCOUNT_ID}.r2.cloudflarestorage.com`
+      : ""),
+  R2_ACCESS_KEY_ID:
+    process.env.EXPO_PUBLIC_R2_ACCESS_KEY_ID || process.env.EXPO_PUBLIC_CF_ACCESS_KEY_ID || "",
+  R2_SECRET_ACCESS_KEY:
+    process.env.EXPO_PUBLIC_R2_SECRET_ACCESS_KEY ||
+    process.env.EXPO_PUBLIC_CF_SECRET_ACCESS_KEY ||
+    "",
+  R2_BUCKET_NAME: process.env.EXPO_PUBLIC_R2_BUCKET_NAME || "bustracknow-assets",
+  R2_PUBLIC_URL: process.env.EXPO_PUBLIC_R2_PUBLIC_URL || "",
+
   // ── App Config ──────────────────────────────────────────────────
   PILOT_CITY: process.env.EXPO_PUBLIC_PILOT_CITY || "coimbatore",
   MIN_REDEMPTION_AMOUNT: Number(process.env.EXPO_PUBLIC_MIN_REDEMPTION_AMOUNT) || 100,

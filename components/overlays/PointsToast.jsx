@@ -1,15 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
-import { colors } from '../../design/tokens';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect } from "react";
+import { Animated, Easing, Text, View } from "react-native";
+import { colors } from "../../design/tokens";
 
-const PointsToast = ({ 
-  visible, 
-  points = 0, 
-  message = '', 
-  type = 'location_share',
-  onClose 
-}) => {
+const PointsToast = ({ visible, points = 0, message = "", type = "location_share", onClose }) => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(100)).current;
 
@@ -42,40 +36,40 @@ const PointsToast = ({
 
       return () => clearTimeout(timer);
     }
-  }, [visible]);
+  }, [visible, fadeAnim, slideAnim, onClose]);
 
   if (!visible) return null;
 
   const getTypeIcon = () => {
     switch (type) {
-      case 'location_share':
-        return 'location';
-      case 'stop_confirm':
-        return 'stop-circle';
-      case 'alert_full':
-      case 'alert_late':
-      case 'alert_not_running':
-        return 'alert-circle';
-      case 'streak_3day':
-      case 'streak_7day':
-      case 'streak_30day':
-        return 'ribbon';
-      case 'referral':
-        return 'people';
+      case "location_share":
+        return "location";
+      case "stop_confirm":
+        return "stop-circle";
+      case "alert_full":
+      case "alert_late":
+      case "alert_not_running":
+        return "alert-circle";
+      case "streak_3day":
+      case "streak_7day":
+      case "streak_30day":
+        return "ribbon";
+      case "referral":
+        return "people";
       default:
-        return 'star';
+        return "star";
     }
   };
 
   const getTypeColor = () => {
     switch (type) {
-      case 'location_share':
+      case "location_share":
         return colors.primary;
-      case 'stop_confirm':
+      case "stop_confirm":
         return colors.success;
-      case 'alert_full':
-      case 'alert_late':
-      case 'alert_not_running':
+      case "alert_full":
+      case "alert_late":
+      case "alert_not_running":
         return colors.warning;
       default:
         return colors.secondary;
@@ -93,7 +87,7 @@ const PointsToast = ({
       <View className="bg-white rounded-2xl shadow-xl p-4 max-w-xs w-full border border-gray-100">
         <View className="flex-row items-center">
           {/* Icon Circle */}
-          <View 
+          <View
             className="w-12 h-12 rounded-full items-center justify-center mr-3"
             style={{ backgroundColor: `${getTypeColor()}15` }}
           >
@@ -106,18 +100,16 @@ const PointsToast = ({
               <Text className="text-3xl font-bold text-gray-900">+{points}</Text>
               <Text className="text-gray-500 text-sm ml-2">points</Text>
             </View>
-            <Text className="text-gray-700 font-medium mt-1">
-              {message || 'Points earned!'}
-            </Text>
+            <Text className="text-gray-700 font-medium mt-1">{message || "Points earned!"}</Text>
           </View>
         </View>
 
         {/* Progress Bar (Optional) */}
-        {type === 'location_share' && (
+        {type === "location_share" && (
           <View className="mt-3 bg-gray-100 rounded-full h-1.5 overflow-hidden">
             <Animated.View
               className="bg-teal-500 h-full rounded-full"
-              style={{ width: `${Math.min(points / 30 * 100, 100)}%` }}
+              style={{ width: `${Math.min((points / 30) * 100, 100)}%` }}
             />
           </View>
         )}

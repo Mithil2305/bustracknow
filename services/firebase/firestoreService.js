@@ -4,6 +4,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  query,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
@@ -25,7 +27,7 @@ export const FirestoreService = {
       // Simple getDocs — no composite index needed.
       // All seeded routes have isActive:true so no where() filter required.
       // Sort client-side by bus number.
-      const snapshot = await getDocs(collection(db, "routes"));
+      const snapshot = await getDocs(query(collection(db, "routes"), limit(50)));
       const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       docs.sort((a, b) =>
         String(a.number || "").localeCompare(String(b.number || ""), undefined, { numeric: true })
@@ -52,7 +54,7 @@ export const FirestoreService = {
 
   getAllStops: async () => {
     try {
-      const snapshot = await getDocs(collection(db, "stops"));
+      const snapshot = await getDocs(query(collection(db, "stops"), limit(200)));
       return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     } catch (error) {
       console.error("Error fetching stops:", error);

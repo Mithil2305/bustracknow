@@ -28,32 +28,19 @@ export default function ConfirmRideModal({ bus, onCancel, onConfirm }) {
 
           {/* GPS Notice */}
           <View style={s.gpsNotice}>
-            <Ionicons
-              name="information-circle-outline"
-              size={20}
-              color="#D97706"
-            />
+            <Ionicons name="information-circle-outline" size={20} color="#D97706" />
             <Text style={s.gpsText}>
-              Please ensure your GPS is on. You'll earn points for every minute
-              you share.
+              Please ensure your GPS is on. You&apos;ll earn points for every minute you share.
             </Text>
           </View>
 
           {/* Buttons */}
           <View style={s.buttons}>
-            <TouchableOpacity
-              style={s.cancelBtn}
-              onPress={onCancel}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={s.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
               <Text style={s.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={s.confirmBtn}
-              onPress={onConfirm}
-              activeOpacity={0.85}
-            >
-              <Text style={s.confirmText}>Yes, I'm here</Text>
+            <TouchableOpacity style={s.confirmBtn} onPress={onConfirm} activeOpacity={0.85}>
+              <Text style={s.confirmText}>Yes, I&apos;m here</Text>
             </TouchableOpacity>
           </View>
         </View>

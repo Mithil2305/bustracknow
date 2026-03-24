@@ -1,13 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-    Animated,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { palette, radius, shadow, spacing } from "../../design/tokens";
 
@@ -16,8 +10,7 @@ const POINT_INTERVAL = 60000; // 1 point per minute
 
 export default function ActiveSharingScreen() {
   const router = useRouter();
-  const { route = "12B", routeName = "Market Road - Hospital" } =
-    useLocalSearchParams();
+  const { route = "12B" } = useLocalSearchParams();
 
   const [seconds, setSeconds] = useState(0);
   const [points, setPoints] = useState(10); // initial bonus
@@ -33,10 +26,7 @@ export default function ActiveSharingScreen() {
 
   // Points accumulation (1 point per minute)
   useEffect(() => {
-    const pointTimer = setInterval(
-      () => setPoints((p) => p + 1),
-      POINT_INTERVAL,
-    );
+    const pointTimer = setInterval(() => setPoints((p) => p + 1), POINT_INTERVAL);
     return () => clearInterval(pointTimer);
   }, []);
 
@@ -57,7 +47,7 @@ export default function ActiveSharingScreen() {
       });
     }, POINTS_TOAST_DURATION);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [fadeAnim]);
 
   // Pulse animation for sharing indicator
   useEffect(() => {
@@ -73,10 +63,10 @@ export default function ActiveSharingScreen() {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]),
+      ])
     ).start();
     return () => pulseAnim.stopAnimation();
-  }, []);
+  }, [pulseAnim]);
 
   const formatTime = (sec) => {
     const m = Math.floor(sec / 60)
@@ -95,22 +85,14 @@ export default function ActiveSharingScreen() {
       {/* Top Banner */}
       <SafeAreaView style={s.banner} edges={["top"]}>
         <View style={s.bannerContent}>
-          <Animated.View
-            style={[s.pulseIcon, { transform: [{ scale: pulseAnim }] }]}
-          >
+          <Animated.View style={[s.pulseIcon, { transform: [{ scale: pulseAnim }] }]}>
             <Ionicons name="radio-outline" size={22} color="#FFFFFF" />
           </Animated.View>
           <View style={s.bannerText}>
             <Text style={s.bannerTitle}>Sharing Live Location</Text>
-            <Text style={s.bannerSub}>
-              Bus {route} • Earn 1 pt/min
-            </Text>
+            <Text style={s.bannerSub}>Bus {route} • Earn 1 pt/min</Text>
           </View>
-          <TouchableOpacity
-            style={s.stopBtn}
-            onPress={handleStop}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={s.stopBtn} onPress={handleStop} activeOpacity={0.8}>
             <Text style={s.stopText}>Stop</Text>
           </TouchableOpacity>
         </View>
@@ -126,9 +108,7 @@ export default function ActiveSharingScreen() {
                 <Text style={{ fontSize: 36 }}>🪙</Text>
               </View>
               <Text style={s.pointsTitle}>+{points} Points!</Text>
-              <Text style={s.pointsBody}>
-                Thanks for helping the community.
-              </Text>
+              <Text style={s.pointsBody}>Thanks for helping the community.</Text>
               <View style={s.bonusRow}>
                 <View style={s.bonusPill}>
                   <Text style={s.bonusText}>Base: +5</Text>
@@ -146,19 +126,11 @@ export default function ActiveSharingScreen() {
               </View>
               <View style={s.badgeRow}>
                 <View style={s.badge}>
-                  <Ionicons
-                    name="battery-half-outline"
-                    size={14}
-                    color={palette.muted}
-                  />
+                  <Ionicons name="battery-half-outline" size={14} color={palette.muted} />
                   <Text style={s.badgeText}>Low Usage</Text>
                 </View>
                 <View style={s.badge}>
-                  <Ionicons
-                    name="eye-off-outline"
-                    size={14}
-                    color={palette.muted}
-                  />
+                  <Ionicons name="eye-off-outline" size={14} color={palette.muted} />
                   <Text style={s.badgeText}>Anonymous</Text>
                 </View>
               </View>
@@ -169,10 +141,10 @@ export default function ActiveSharingScreen() {
               <View style={s.guideCircle}>
                 <Ionicons name="location" size={32} color={palette.success} />
               </View>
-              <Text style={s.guideTitle}>You're the Guide!</Text>
+              <Text style={s.guideTitle}>You&apos;re the Guide!</Text>
               <Text style={s.guideBody}>
-                Keep the app open to earn points. Your location helps 12 others
-                waiting for this bus.
+                Keep the app open to earn points. Your location helps 12 others waiting for this
+                bus.
               </Text>
               <View style={s.rewardsCard}>
                 <Text style={s.rewardsLabel}>CURRENT REWARDS</Text>
@@ -184,27 +156,17 @@ export default function ActiveSharingScreen() {
                   <Text style={s.rewardsKey}>Points Earned</Text>
                   <View style={s.earnedValue}>
                     <Text style={{ fontSize: 14 }}>🪙</Text>
-                    <Text style={[s.earnedNumber, { color: "#D97706" }]}>
-                      {points}
-                    </Text>
+                    <Text style={[s.earnedNumber, { color: "#D97706" }]}>{points}</Text>
                   </View>
                 </View>
               </View>
               <View style={s.badgeRow}>
                 <View style={s.badge}>
-                  <Ionicons
-                    name="battery-half-outline"
-                    size={14}
-                    color={palette.muted}
-                  />
+                  <Ionicons name="battery-half-outline" size={14} color={palette.muted} />
                   <Text style={s.badgeText}>Low Usage</Text>
                 </View>
                 <View style={s.badge}>
-                  <Ionicons
-                    name="eye-off-outline"
-                    size={14}
-                    color={palette.muted}
-                  />
+                  <Ionicons name="eye-off-outline" size={14} color={palette.muted} />
                   <Text style={s.badgeText}>Anonymous</Text>
                 </View>
               </View>
